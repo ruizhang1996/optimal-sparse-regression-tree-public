@@ -1,0 +1,16 @@
+sync_guide.csv
+NA
+2
+1 Iy_1 C
+2 Iy_2 C
+3 Iy_3 C
+4 PF_1 C
+5 PF_2 C
+6 PF_3 C
+7 e_1 C
+8 e_2 C
+9 e_3 C
+10 dIf_1 C
+11 dIf_2 C
+12 dIf_3 C
+13 If D 

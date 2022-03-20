@@ -1,0 +1,33 @@
+optical_guide.csv
+NA
+2
+1 Node_Number_64 C
+2 Thread_Number_4 C
+3 Thread_Number_6 C
+4 Thread_Number_8 C
+5 Spatial_Distribution_HR C
+6 Spatial_Distribution_PS C
+7 Spatial_Distribution_UN C
+8 Temporal_Distribution_Client-Server C
+9 T_R_0.2 C
+10 T_R_0.3 C
+11 T_R_0.4 C
+12 T_R_0.5 C
+13 T_R_0.6 C
+14 T_R_0.7 C
+15 T_R_0.8 C
+16 T_R_0.9 C
+17 T_R_1.0 C
+18 Processor_Utilization__1 C
+19 Processor_Utilization__2 C
+20 Processor_Utilization__3 C
+21 Channel_Waiting_Time_1 C
+22 Channel_Waiting_Time_2 C
+23 Channel_Waiting_Time_3 C
+24 Input_Waiting_Time_1 C
+25 Input_Waiting_Time_2 C
+26 Input_Waiting_Time_3 C
+27 Network_Response_Time_1 C
+28 Network_Response_Time_2 C
+29 Network_Response_Time_3 C
+30 Channel_Utilization D 

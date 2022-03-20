@@ -1,0 +1,36 @@
+seoul_bike_guide.csv
+NA
+2
+1 Seasons_Spring C
+2 Seasons_Summer C
+3 Seasons_Winter C
+4 Holiday_No_Holiday C
+5 Functioning_Day_Yes C
+6 Hour_1 C
+7 Hour_2 C
+8 Hour_3 C
+9 Temperature(°C)_1 C
+10 Temperature(°C)_2 C
+11 Temperature(°C)_3 C
+12 Humidity(%)_1 C
+13 Humidity(%)_2 C
+14 Humidity(%)_3 C
+15 Wind_speed_(m_s)_1 C
+16 Wind_speed_(m_s)_2 C
+17 Wind_speed_(m_s)_3 C
+18 Visibility_(10m)_1 C
+19 Visibility_(10m)_2 C
+20 Visibility_(10m)_3 C
+21 Dew_point_temperature(°C)_1 C
+22 Dew_point_temperature(°C)_2 C
+23 Dew_point_temperature(°C)_3 C
+24 Solar_Radiation_(MJ_m2)_1 C
+25 Solar_Radiation_(MJ_m2)_2 C
+26 Solar_Radiation_(MJ_m2)_3 C
+27 Rainfall(mm)_1 C
+28 Rainfall(mm)_2 C
+29 Rainfall(mm)_3 C
+30 Snowfall_(cm)_1 C
+31 Snowfall_(cm)_2 C
+32 Snowfall_(cm)_3 C
+33 Rented_Bike_Count D 
