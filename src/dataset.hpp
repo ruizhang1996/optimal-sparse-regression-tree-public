@@ -110,6 +110,7 @@ private:
     std::vector< Bitmask > features; // Binary representation of columns
     std::vector< double > targets; // Float vector of size # of rows
     std::vector< double > clustered_targets; // Float vector of size <= # of rows
+    std::vector< double > cluster_loss; // Float vector of size <= # of rows
     std::vector< int > clustered_targets_mapping; // Index of order for targets
     std::vector< Bitmask > rows; // Binary representation of rows
     std::vector< Bitmask > feature_rows; // Binary representation of rows
@@ -137,9 +138,11 @@ private:
     void normalize_data(void);
     
     double compute_kmeans_lower_bound(Bitmask capture_set) const;
+    double compute_equivalent_points_lower_bound(Bitmask capture_set) const;
 
-    double mse_loss(Bitmask capture_set) const;
-    double compute_loss(Bitmask capture_set) const;
+    double ssq_loss(Bitmask capture_set) const;
+    double ssq_loss(std::vector< int > capture_set_idx) const;
+    // double compute_loss(Bitmask capture_set) const;
 };
 
 #endif
