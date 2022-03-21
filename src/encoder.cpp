@@ -129,6 +129,9 @@ void Encoder::parse(std::vector< std::vector< std::string > > const & rows) {
 
     std::map< std::string, unsigned int > target_distribution;
 
+    std::vector< double > numerical_targets;
+    
+
     // Content-based type inference
     for (unsigned int i = 0; i < n; ++i) {
         for (unsigned int j = 0; j < m; ++j) {
@@ -172,7 +175,12 @@ void Encoder::parse(std::vector< std::vector< std::string > > const & rows) {
 
     // Override Type Inference for Target Column
     // This ensures use of equality encoding instead of threshold encoding
+    assert(inferred_types[m - 1] == "Rational");
     inferred_types[m - 1] = "Categorical";
+    for (unsigned int i = 0; i < n; ++i) {
+        numerical_targets.emplace_back(atof(rows[i][m-1].c_str()));
+    }
+    this -> numerical_targets = numerical_targets;
 }
 
 void Encoder::limit_precision(std::vector< std::set< std::string > > & values) const {
@@ -482,6 +490,8 @@ void Encoder::target_type(std::string & value) const {
 }
 
 std::vector< Bitmask > const & Encoder::read_binary_rows(void) const { return this -> binary_rows; }
+
+std::vector< double > const & Encoder::read_numerical_targets(void) const { return this -> numerical_targets; }
 
 unsigned int Encoder::samples(void) const { return this -> number_of_rows; }
 

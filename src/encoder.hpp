@@ -56,6 +56,8 @@ public:
     // std::vector< std::vector< std::string > > const & read_rows(void) const;
     // @return matrix of bit elements of the binary csv
     std::vector< Bitmask > const & read_binary_rows(void) const;
+    // @return vector of numerical values of targets
+    std::vector< double > const & read_numerical_targets(void) const;
     // @return the number of features read as input
     unsigned int features(void) const;
     // @return the number of targets read as input
@@ -139,6 +141,9 @@ private:
 
     // Binary representation of rows
     std::vector< Bitmask > binary_rows;
+    
+    // Numerical target values 
+    std::vector< double > numerical_targets;
 
     // @param number: input number to reduce precision
     // @return an input equivalent to number rounded to k significant figures

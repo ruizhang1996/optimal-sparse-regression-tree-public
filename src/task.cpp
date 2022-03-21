@@ -16,7 +16,7 @@ Task::Task(Bitmask const & capture_set, Bitmask const & feature_set, unsigned in
 
     this -> _base_objective = max_loss + regularization;
     // Add lambda because we know this has at least 2 leaves
-    float const lowerbound = std::min(this -> _base_objective, min_loss + 2 * regularization);
+    float const lowerbound = std::min(this -> _base_objective, min_loss);
     float const upperbound = this -> _base_objective;
 
     if ( (1.0 - min_loss < regularization ) // Insufficient maximum accuracy

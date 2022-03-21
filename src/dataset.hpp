@@ -12,9 +12,12 @@
 #include <tuple>
 #include <assert.h>
 #include <vector>
+#include <numeric>
 #include <unordered_map>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/scalable_allocator.h>
+// #include <ckmeans/dynamic_prog.cpp>
+#include <ckmeans/Ckmeans.1d.dp.h>
 
 #ifdef INCLUDE_OPENCL
 #include <opencl/cl.hpp>
@@ -89,6 +92,8 @@ public:
 
     void tile(Bitmask const & filter, Bitmask const & selector, Tile & tile_output, std::vector< int > & order, unsigned int id) const;
 
+    mutable int summary_calls = 0;
+
 private:
     static bool index_comparator(const std::pair< unsigned int, unsigned int > & left, const std::pair< unsigned int, unsigned int > & right);
 
@@ -103,18 +108,21 @@ private:
     // std::vector< std::vector< float > > distributions; // Class distributions for each row
 
     std::vector< Bitmask > features; // Binary representation of columns
-    std::vector< Bitmask > targets; // Binary representation of columns
+    std::vector< double > targets; // Float vector of size # of rows
+    std::vector< double > clustered_targets; // Float vector of size <= # of rows
+    std::vector< int > clustered_targets_mapping; // Index of order for targets
     std::vector< Bitmask > rows; // Binary representation of rows
     std::vector< Bitmask > feature_rows; // Binary representation of rows
-    std::vector< Bitmask > target_rows; // Binary representation of rows
+    std::vector< double > target_rows; // Binary representation of rows
     Bitmask majority; // Binary representation of columns
-    std::vector< std::vector< float > > costs; // Cost matrix for each type of misprediction
+    // std::vector< std::vector< float > > costs; // Cost matrix for each type of misprediction
     std::vector< float > match_costs; // Cost matrix for each type of misprediction
     std::vector< float > mismatch_costs; // Cost matrix for each type of misprediction
     std::vector< float > max_costs; // Cost matrix for each type of misprediction
     std::vector< float > min_costs; // Cost matrix for each type of misprediction
     std::vector< float > diff_costs; // Cost matrix for each type of misprediction
-
+    
+    
     // Index index; // Index for calculating summaries
     // Index distance_index; // Index for calculating feature distances
 
@@ -123,6 +131,15 @@ private:
     void parse_cost_matrix(std::istream & input_stream);
     void aggregate_cost_matrix(void);
     void construct_majority(void);
+
+    void construct_ordering(void);
+    
+    void normalize_data(void);
+    
+    double compute_kmeans_lower_bound(Bitmask capture_set) const;
+
+    double mse_loss(Bitmask capture_set) const;
+    double compute_loss(Bitmask capture_set) const;
 };
 
 #endif

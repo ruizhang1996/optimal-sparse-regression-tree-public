@@ -15,11 +15,15 @@ void Dataset::load(std::istream & data_source) {
     // Step 1: Construct all rows, features, and targets in binary form
     construct_bitmasks(data_source);
 
+
     // Step 2: Initialize the cost matrix
-    construct_cost_matrix();
+    // construct_cost_matrix();
 
     // Step 3: Build the majority and minority costs based on the cost matrix
-    aggregate_cost_matrix();
+    // aggregate_cost_matrix();
+    
+    // construct_ordering();
+    normalize_data();
 
     // Step 4: Build the majority bitmask indicating whether a point is in the majority group
     construct_majority();
@@ -36,7 +40,7 @@ void Dataset::clear(void) {
     this -> rows.clear();
     this -> feature_rows.clear();
     this -> target_rows.clear();
-    this -> costs.clear();
+    // this -> costs.clear();
     this -> match_costs.clear();
     this -> mismatch_costs.clear();
     this -> max_costs.clear();
@@ -60,120 +64,19 @@ void Dataset::construct_bitmasks(std::istream & data_source) {
     this -> feature_rows.resize(number_of_samples, number_of_binary_features);
     this -> targets.resize(number_of_binary_targets, number_of_samples);
     this -> target_rows.resize(number_of_samples, number_of_binary_targets);
+    
+    this -> targets = encoder.read_numerical_targets();
+    this -> target_rows = encoder.read_numerical_targets();
+
 
     for (unsigned int i = 0; i < number_of_samples; ++i) {
         for (unsigned int j = 0; j < number_of_binary_features; ++j) {
             this -> features[j].set(i, bool(rows[i][j]));
             this -> feature_rows[i].set(j, bool(rows[i][j]));
         }
-        for (unsigned int j = 0; j < number_of_binary_targets; ++j) {
-            this -> targets[j].set(i, bool(rows[i][number_of_binary_features + j]));
-            this -> target_rows[i].set(j, bool(rows[i][number_of_binary_features + j]));
-        }
     }
     this -> shape = std::tuple< int, int, int >(this -> rows.size(), this -> features.size(), this -> targets.size());
 };
-
-void Dataset::construct_cost_matrix(void) {
-    this -> costs.resize(depth(), std::vector< float >(depth(), 0.0));
-    if (Configuration::costs != "") { // Customized cost matrix
-        std::ifstream input_stream(Configuration::costs);
-        parse_cost_matrix(input_stream);
-    } else if (Configuration::balance) { // Class-balancing cost matrix
-        for (unsigned int i = 0; i < depth(); ++i) {
-            for (unsigned int j = 0; j < depth(); ++j) {
-                if (i == j) { this -> costs[i][j] = 0.0; continue; }
-                this -> costs[i][j] = 1.0 / (float)(depth() * this -> targets[j].count());
-            }
-        }
-    } else { // Default cost matrix
-        for (unsigned int i = 0; i < depth(); ++i) {
-            for (unsigned int j = 0; j < depth(); ++j) {
-                if (i == j) { this -> costs[i][j] = 0.0; continue; }
-                this -> costs[i][j] = 1.0 / (float)(height());
-            }
-        }
-    }
-}
-
-void Dataset::parse_cost_matrix(std::istream & input_stream) {
-    // Parse given cost matrix
-    io::LineReader input("", input_stream);
-    unsigned int line_index = 0;
-    std::unordered_map< std::string, unsigned int > reference_to_decoded;
-    std::vector< std::vector< float > > table;
-    while (char * line = input.next_line()) {
-        std::stringstream stream(line);
-        std::string token;
-        std::vector< std::string > row;
-        std::vector< float > parsed_row;
-        while (stream.good()) {
-            getline(stream, token, ',');
-            row.emplace_back(token);
-        }
-        if (row.empty()) { continue; }
-        if (line_index == 0) {
-            for (unsigned int j = 0; j < row.size(); ++j) { reference_to_decoded[row[j]] = j; }
-        } else {
-            for (unsigned int j = 0; j < row.size(); ++j) { parsed_row.emplace_back(atof(row[j].c_str())); }
-            table.emplace_back(parsed_row);
-        }
-        ++line_index;
-    }
-
-    std::vector< std::string > encoded_to_reference;
-    for (unsigned int j = 0; j < depth(); ++j) {
-        std::string type, relation, reference;
-        encoder.encoding(width() + j, type, relation, reference);
-        encoded_to_reference.emplace_back(reference);
-    }
-
-    if (table.size() == 1) {
-        for (unsigned int i = 0; i < depth(); ++i) {
-            for (unsigned int j = 0; j < depth(); ++j) {
-                if (i == j) { this -> costs[i][j] = 0.0; continue; }
-                if (reference_to_decoded.find(encoded_to_reference[j]) == reference_to_decoded.end()) {
-                    std::cout << "No cost specified for class = " << encoded_to_reference[j] << std::endl;
-                    exit(1);
-                }
-                unsigned int _i = 0;
-                unsigned int _j = reference_to_decoded[encoded_to_reference[j]];
-                this -> costs[i][j] = table[_i][_j];
-            }
-        }
-    } else {
-        for (unsigned int i = 0; i < depth(); ++i) {
-            for (unsigned int j = 0; j < depth(); ++j) {
-                if (reference_to_decoded.find(encoded_to_reference[i]) == reference_to_decoded.end() || reference_to_decoded.find(encoded_to_reference[j]) == reference_to_decoded.end()) {
-                    std::cout << "No cost specified for prediction = " << encoded_to_reference[i] << ", class = " << encoded_to_reference[j] << std::endl;
-                    exit(1);
-                }
-                unsigned int _i = reference_to_decoded[encoded_to_reference[i]];
-                unsigned int _j = reference_to_decoded[encoded_to_reference[j]];
-                this -> costs[i][j] = table[_i][_j];
-            }
-        }
-    }
-};
-
-void Dataset::aggregate_cost_matrix(void) {
-    this -> match_costs.resize(depth(), 0.0);
-    this -> mismatch_costs.resize(depth(), std::numeric_limits<float>::max());
-    this -> max_costs.resize(depth(), -std::numeric_limits<float>::max());
-    this -> min_costs.resize(depth(), std::numeric_limits<float>::max());
-    this -> diff_costs.resize(depth(), std::numeric_limits<float>::max());
-    for (unsigned int j = 0; j < depth(); ++j) {
-        for (unsigned int i = 0; i < depth(); ++i) {
-            this -> max_costs[j] = std::max(this -> max_costs[j], this -> costs[i][j]);
-            this -> min_costs[j] = std::min(this -> min_costs[j], this -> costs[i][j]);
-            if (i == j) { this -> match_costs[j] = this -> costs[i][j]; continue; }
-            this -> mismatch_costs[j] = std::min(this -> mismatch_costs[j], this -> costs[i][j]);
-        }
-    }
-    for (unsigned int j = 0; j < depth(); ++j) {
-        this -> diff_costs[j] = this -> max_costs[j] - this -> min_costs[j] ;
-    }
-}
 
 void Dataset::construct_majority(void) {
     std::vector< Bitmask > keys(height(), width());
@@ -182,68 +85,152 @@ void Dataset::construct_majority(void) {
             keys[i].set(j, bool(this -> rows[i][j]));
         }
     }
-
-    // Step 1: Construct a map from the binary features to their distributions
-    std::unordered_map< Bitmask, std::vector< float > > distributions;
-    for (unsigned int i = 0; i < height(); ++i) {
+    
+    // Step 1: Construct a map from the binary features to their clusters,
+    // indicated by their indices in capture set
+    std::unordered_map< Bitmask, std::vector< int > > clusters;
+    for (int i = 0; i < height(); ++i) {
         Bitmask const & key = keys.at(i);
-        // Initialize the map and resize the value (of type vector) to the number of unique labels
-        // This way the vector can hold the label distribution for this feature combination
-        if (distributions[key].size() < depth()) { distributions[key].resize(depth(), 0.0); }
-        for (unsigned int j = 0; j < depth(); ++j) {
-            distributions[key][j] += (float)rows[i][width() + j];
+        clusters[key].emplace_back(i);
+    }
+    
+    // Step 2: Convert clusters map into an array by taking the mean of each
+    // cluster, initialize unsorted order, and initialize data index to cluster
+    // index mapping
+    std::vector< double > clustered_targets;
+    std::vector< int > cluster_order;
+    std::vector< int > clustered_targets_mapping(size());
+    int cluster_idx = 0;
+    for (auto it = clusters.begin(); it != clusters.end(); ++it) {
+        std::vector< int > const & cluster = it -> second;
+        std::vector< double > cluster_values;
+        for (int idx : cluster) {
+            cluster_values.emplace_back(targets[idx]);
+            clustered_targets_mapping[idx] = cluster_idx;
         }
+        double sum = std::accumulate(cluster_values.begin(), cluster_values.end(), 0.0);
+        double mean = sum / cluster_values.size();
+        clustered_targets.emplace_back(mean);
+        cluster_order.emplace_back(cluster_idx++);
+    }
+    
+    // Step 3: Sort clustered target values and update data index to cluster
+    // index mapping
+    auto compi = [clustered_targets](size_t i, size_t j) {
+        return clustered_targets[i] < clustered_targets[j];
+    };
+    std::sort(cluster_order.begin(), cluster_order.end(), compi);
+    std::vector< double > sorted_clustered_targets(clustered_targets.size());
+    for (int i = 0; i < clustered_targets.size(); i++) {
+        sorted_clustered_targets[i] = clustered_targets[cluster_order[i]];
+    }
+    std::vector< int > inverted_cluster_order(cluster_order.size());
+    for (int i = 0; i < cluster_order.size(); i++) {
+        inverted_cluster_order[cluster_order[i]] = i;
+    }
+    for (int i = 0; i < size(); i++) {
+        clustered_targets_mapping[i] = inverted_cluster_order[clustered_targets_mapping[i]];
     }
 
-    // Step 2: Construct a map from the binary features to cost minimizers
-    std::unordered_map< Bitmask, unsigned int  > minimizers;
-    for (auto it = distributions.begin(); it != distributions.end(); ++it) {
-        Bitmask const & key = it -> first;
-        std::vector< float > const & distribution = it -> second;
-        float minimum = std::numeric_limits<float>::max();
-        unsigned int minimizer = 0;
-        for (unsigned int i = 0; i < depth(); ++i) {
-            float cost = 0.0;
-            for (unsigned int j = 0; j < depth(); ++j) {
-                cost += this -> costs[i][j] * distribution.at(j); // Cost of predicting i when the class is j
-            }
-            if (cost < minimum) {
-                minimum = cost;
-                minimizer = i;
-            }
-        }
-        minimizers.emplace(key, minimizer);
-    }
+    this -> clustered_targets = sorted_clustered_targets;
+    this -> clustered_targets_mapping = clustered_targets_mapping;
 
-    // Step 3: Set the bits associated with each minimizer
-    this -> majority.initialize(height());
-    for (unsigned int i = 0; i < height(); ++i) {
-        Bitmask const & key = keys.at(i);
-        unsigned int minimizer = minimizers[key];
-        unsigned int label = this -> rows[i].scan(width(), true) - width();
-        this -> majority.set(i, minimizer == label); // Set this bit true if the label matches this minimizer
+}
+
+// TODO: investigate 
+float Dataset::distance(Bitmask const & set, unsigned int i, unsigned int j, unsigned int id) const {
+    return 0;
+}
+
+
+void Dataset::construct_ordering(void) {
+    auto targets = this -> targets;
+    auto compi = [targets](size_t i, size_t j) {
+        return targets[i] < targets[j];
+    };
+    std::vector<int> order(size());
+
+    for (size_t i=0; i<order.size(); ++i) {
+        order[i] = i;
+    }
+    
+    std::sort(order.begin(), order.end(), compi);
+
+    // this -> targets_ordering = order;
+}
+
+double Dataset::mse_loss(Bitmask capture_set) const {
+    int max = capture_set.count();
+    double cumsum1 = 0;
+    double cumsum2 = 0;
+    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+        cumsum1 += targets[i];
+        cumsum2 += targets[i] * targets[i];
+    }
+    return cumsum2 / max - cumsum1 * cumsum1 * 2 / max / max;
+}
+
+double Dataset::compute_loss(Bitmask capture_set) const {
+    // return compute_loss(capture_set) / loss_normalizer;
+    return 0;
+}
+
+void Dataset::normalize_data() {
+
+    double loss_normalizer = std::sqrt(mse_loss(Bitmask(size(), true)));
+
+    for (int i = 0; i < size(); i++) {
+        targets[i] = targets[i] / loss_normalizer;
     }
 }
 
-float Dataset::distance(Bitmask const & set, unsigned int i, unsigned int j, unsigned int id) const {
-    Bitmask & buffer = State::locals[id].columns[0];
-    float positive_distance = 0.0, negative_distance = 0.0;
-    for (unsigned int k = 0; k < depth(); ++k) {
-        buffer = this -> features[i];
-        this -> features[j].bit_xor(buffer, false);
-        set.bit_and(buffer);
-        // this -> majority.bit_and(buffer, false);
-        this -> targets[k].bit_and(buffer);
-        positive_distance += this -> diff_costs[k] * buffer.count();
-
-        buffer = this -> features[i];
-        this -> features[j].bit_xor(buffer, true);
-        set.bit_and(buffer);
-        // this -> majority.bit_and(buffer, false);
-        this -> targets[k].bit_and(buffer);
-        negative_distance += this -> diff_costs[k] * buffer.count();
+double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
+    int max = capture_set.size();
+    
+    int normalizer = capture_set.count();
+    double reg = Configuration::regularization;
+    
+    if (normalizer == 1) {
+        return mse_loss(capture_set) + reg;
     }
-    return std::min(positive_distance, negative_distance);
+    
+    std::vector< int > count(clustered_targets_mapping.size());
+    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+        count[clustered_targets_mapping[i]]++;
+    }
+    
+    // Why do you need this? 
+    std::vector< double > weights;
+    std::vector< double > values;
+    for (int i = 0; i < count.size(); i++) {
+        if (count[i] > 0) {
+            weights.emplace_back(count[i]);
+            values.emplace_back(clustered_targets[i]);
+        }
+    }
+    
+    int N = weights.size();
+    int Kmax = std::min(10, N);
+    std::vector< std::vector< ldouble > > S( Kmax, std::vector<ldouble>(N) );
+    std::vector< std::vector< size_t > > J( Kmax, std::vector<size_t>(N) );
+    fill_dp_matrix(values, weights, S, J, "linear", L2);
+    
+    
+    long double min = std::numeric_limits<double>::max();;
+    int argmin = -1;
+    for (int i = 0; i < Kmax; i++) {
+        ldouble obj = S[i][N-1] / normalizer + (i + 1) * reg;
+        if (min > obj) {
+            min = obj;
+            argmin = i;
+        }
+    }
+
+    if (argmin == 10 - 1) {
+        std::cout << "WARNING";
+    }
+    return min;
+
 }
 
 // @param feature_index: selects the feature on which to split
@@ -263,54 +250,26 @@ void Dataset::subset(unsigned int feature_index, Bitmask & negative, Bitmask & p
 }
 
 void Dataset::summary(Bitmask const & capture_set, float & info, float & potential, float & min_loss, float & max_loss, unsigned int & target_index, unsigned int id) const {
+    summary_calls++;
     Bitmask & buffer = State::locals[id].columns[0];
     unsigned int * distribution; // The frequencies of each class
     distribution = (unsigned int *) alloca(sizeof(unsigned int) * depth());
-    for (int j = depth(); --j >= 0;) {
-        buffer = capture_set; // Set representing the captured points
-        this -> targets.at(j).bit_and(buffer); // Captured points with label j
-        distribution[j] = buffer.count(); // Calculate frequency
-    }
 
     float min_cost = std::numeric_limits<float>::max();
     unsigned int cost_minimizer = 0;
 
-    for (int i = depth(); --i >= 0;) { // Prediction index
-        float cost = 0.0; // accumulator for the cost of making this prediction
-        for (int j = depth(); --j >= 0;) { // Class index
-            cost += this -> costs.at(i).at(j) * distribution[j]; // cost of prediction-class combination
-        }
-        if (cost < min_cost) { // track the prediction that minimizes cost
-            min_cost = cost;
-            cost_minimizer = i;
-        }
-    }
+    min_cost = mse_loss(capture_set);
     float max_cost_reduction = 0.0;
     float equivalent_point_loss = 0.0;
     float support = (float)(capture_set.count()) / (float)(height());
     float information = 0.0;
+    
+    // equivalent_point_loss = 2 * Configuration::regularization;
+    equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
 
-    for (int j = depth(); --j >= 0;) { // Class index
-        // maximum cost difference across predictions
-        max_cost_reduction += this -> diff_costs[j] * distribution[j];
-
-        buffer = capture_set; // Set representing the captured points
-        this -> majority.bit_and(buffer, false); // Captured majority points
-        this -> targets.at(j).bit_and(buffer); // Captured majority points with label j
-        equivalent_point_loss += this -> match_costs[j] * buffer.count(); // Calculate frequency
-
-        buffer = capture_set; // Set representing the captured points
-        this -> majority.bit_and(buffer, true); // Captured minority points
-        this -> targets.at(j).bit_and(buffer); // Captured minority points with label j
-        equivalent_point_loss += this -> mismatch_costs[j] * buffer.count(); // Calculate frequency
-
-        float prob = distribution[j];
-        if (prob > 0) { information += support * prob * (log(prob) - log(support)); }
-    }
-
-    potential = max_cost_reduction;
     min_loss = equivalent_point_loss;
     max_loss = min_cost;
+    potential = max_loss - min_loss;
     info = information;
     target_index = cost_minimizer;
 }
