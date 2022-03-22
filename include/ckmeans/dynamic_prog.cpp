@@ -32,6 +32,84 @@
 
 //#define DEBUG
 
+ldouble fill_dp_matrix_dynamic_stop(const std::vector<double> & x, // data
+                    const std::vector<double> & w, // weight
+                    std::vector< std::vector< ldouble > > & S,
+                    std::vector< std::vector< size_t > > & J,
+                    ldouble reg)
+  /*
+   x: One dimension vector to be clustered, must be sorted (in any order).
+   S: K x N matrix. S[q][i] is the sum of squares of the distance from
+   each x[i] to its cluster mean when there are exactly x[i] is the
+   last point in cluster q
+   J: K x N backtrack matrix
+
+   NOTE: All vector indices in this program start at position 0
+   */
+{
+  const int K = (int) S.size();
+  const int N = (int) S[0].size();
+
+  std::vector<ldouble> sum_x(N), sum_x_sq(N);
+  std::vector<ldouble> sum_w(w.size()), sum_w_sq(w.size());
+
+  std::vector<int> jseq;
+
+  ldouble shift = x[N/2]; // median. used to shift the values of x to
+  //  improve numerical stability
+
+  if(w.empty()) { // equally weighted
+    sum_x[0] = x[0] - shift;
+    sum_x_sq[0] = (x[0] - shift) * (x[0] - shift);
+  } else { // unequally weighted
+    sum_x[0] = w[0] * (x[0] - shift);
+    sum_x_sq[0] = w[0] * (x[0] - shift) * (x[0] - shift);
+    sum_w[0] = w[0];
+    sum_w_sq[0] = w[0] * w[0];
+  }
+
+  S[0][0] = 0;
+  J[0][0] = 0;
+
+  for(int i = 1; i < N; ++i) {
+
+    if(w.empty()) { // equally weighted
+      sum_x[i] = sum_x[i-1] + x[i] - shift;
+      sum_x_sq[i] = sum_x_sq[i-1] + (x[i] - shift) * (x[i] - shift);
+    } else { // unequally weighted
+      sum_x[i] = sum_x[i-1] + w[i] * (x[i] - shift);
+      sum_x_sq[i] = sum_x_sq[i-1] + w[i] * (x[i] - shift) * (x[i] - shift);
+      sum_w[i] = sum_w[i-1] + w[i];
+      sum_w_sq[i] = sum_w_sq[i-1] + w[i]*w[i];
+    }
+
+    // Initialize for q = 0
+    S[0][i] = ssq(0, i, sum_x, sum_x_sq, sum_w);
+    J[0][i] = 0;
+  }
+
+
+  for(int q = 1; q < K; ++q) {
+    int imin;
+    if(q < K - 1) {
+      imin = std::max(1, q);
+    } else {
+      // No need to compute S[K-1][0] ... S[K-1][N-2]
+      imin = N-1;
+    }
+
+    // fill_row_k_linear_recursive(imin, N-1, 1, q, jseq, S, J, sum_x, sum_x_sq);
+    // fill_row_k_linear(imin, N-1, q, S, J, sum_x, sum_x_sq);
+    fill_row_q_SMAWK(imin, N-1, q, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, L2);
+    
+    if (S[q-1][N-1] - S[q][N-1] < reg) {
+      return S[q-1][N-1] + q * reg;
+    }
+
+  }
+  return S[K-1][N-1] + K * reg;
+
+}
 void fill_dp_matrix(const std::vector<double> & x, // data
                     const std::vector<double> & w, // weight
                     std::vector< std::vector< ldouble > > & S,

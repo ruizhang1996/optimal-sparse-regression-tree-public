@@ -123,16 +123,6 @@ inline ldouble dissimilarity(
 {
   ldouble d=0;
 
-  switch(dis) {
-  case L1:
-    d = sabs(j, i, sum_x, sum_w);
-    break;
-  case L2:
-    d = ssq(j, i, sum_x, sum_x_sq, sum_w);
-    break;
-  case L2Y:
-    d = ssq(j, i, sum_w, sum_w_sq);
-    break;
-  }
+  d = ssq(j, i, sum_x, sum_x_sq, sum_w);
   return d;
 }

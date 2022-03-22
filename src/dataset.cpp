@@ -227,6 +227,8 @@ double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
     // Why do you need this? 
     std::vector< double > weights;
     std::vector< double > values;
+
+    // TODO: we can precompute all the sum of squares so one less passthrough
     for (int i = 0; i < count.size(); i++) {
         if (count[i] > 0) {
             weights.emplace_back(count[i]);
@@ -239,24 +241,10 @@ double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
     int Kmax = std::min(10, N);
     std::vector< std::vector< ldouble > > S( Kmax, std::vector<ldouble>(N) );
     std::vector< std::vector< size_t > > J( Kmax, std::vector<size_t>(N) );
-    fill_dp_matrix(values, weights, S, J, "linear", L2);
     
-    
-    
-    
-    long double min = std::numeric_limits<double>::max();;
-    int argmin = -1;
-    for (int i = 0; i < Kmax; i++) {
-        ldouble obj = S[i][N-1] + correction + (i + 1) * reg;
-        if (min > obj) {
-            min = obj;
-            argmin = i;
-        }
-    }
+    // TODO: add dynamically assigned Kmax via scope
+    ldouble min = fill_dp_matrix_dynamic_stop(values, weights, S, J, reg) + correction;
 
-    if (argmin == 10 - 1) {
-        std::cout << "WARNING";
-    }
     return min;
 
 }
@@ -308,12 +296,13 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     float support = (float)(capture_set.count()) / (float)(height());
     float information = 0.0;
     
-
-    // int ct = capture_set.count();
-    
-    // float equivalent_point_loss_1 = 2 * Configuration::regularization + compute_equivalent_points_lower_bound(capture_set);
-    equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
+    // if (summary_calls > 30000) {
+    //     equivalent_point_loss = 2 * Configuration::regularization + compute_equivalent_points_lower_bound(capture_set);
+    // } else {
+    //     equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
+    // }
     // assert(min_cost + Configuration::regularization < equivalent_point_loss_1 || equivalent_point_loss_1 < equivalent_point_loss);
+    equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
 
     min_loss = equivalent_point_loss;
     max_loss = min_cost;
