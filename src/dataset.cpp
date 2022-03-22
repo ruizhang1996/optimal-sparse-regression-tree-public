@@ -238,7 +238,7 @@ double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
     }
     
     int N = weights.size();
-    int Kmax = std::min(10, N);
+    int Kmax = std::min(100, N);
     std::vector< std::vector< ldouble > > S( Kmax, std::vector<ldouble>(N) );
     std::vector< std::vector< size_t > > J( Kmax, std::vector<size_t>(N) );
     
@@ -302,7 +302,26 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     //     equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
     // }
     // assert(min_cost + Configuration::regularization < equivalent_point_loss_1 || equivalent_point_loss_1 < equivalent_point_loss);
-    equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
+    // equivalent_point_loss = 2 * Configuration::regularization + compute_equivalent_points_lower_bound(capture_set);
+    kmeans_accessor stored_kmeans_accessor;
+    if (State::graph.kmeans.find(stored_kmeans_accessor, capture_set)) {
+        equivalent_point_loss = stored_kmeans_accessor->second;
+        stored_kmeans_accessor.release();
+    } else {
+        equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
+        auto new_kmeans = std::make_pair(capture_set, equivalent_point_loss);
+        State::graph.kmeans.insert(new_kmeans);
+        compute_kmeans_calls++;
+    }
+
+    // float equivalent_point_loss_1 = 2 * Configuration::regularization + compute_equivalent_points_lower_bound(capture_set);
+    // float max_loss_1 = min_cost + Configuration::regularization;
+    // float diff = equivalent_point_loss - equivalent_point_loss_1;
+
+    // float gap = max_loss_1 - equivalent_point_loss_1;
+    // float percent = gap <= 0.0001 ? 0 : diff / gap;
+    
+    // cum_percent += percent;
 
     min_loss = equivalent_point_loss;
     max_loss = min_cost;

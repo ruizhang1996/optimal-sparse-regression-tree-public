@@ -93,6 +93,8 @@ public:
     void tile(Bitmask const & filter, Bitmask const & selector, Tile & tile_output, std::vector< int > & order, unsigned int id) const;
 
     mutable int summary_calls = 0;
+    mutable int compute_kmeans_calls = 0;
+    mutable double cum_percent = 0;
 
 private:
     static bool index_comparator(const std::pair< unsigned int, unsigned int > & left, const std::pair< unsigned int, unsigned int > & right);
