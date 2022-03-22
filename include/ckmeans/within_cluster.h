@@ -40,25 +40,28 @@ inline ldouble ssq(
 {
   ldouble sji(0.0);
 
-  if(sum_w.empty()) { // equally weighted version
-    if(j >= i) {
-      sji = 0.0;
-    } else if(j > 0) {
-      ldouble muji = (sum_x[i] - sum_x[j-1]) / (i - j + 1);
-      sji = sum_x_sq[i] - sum_x_sq[j-1] - (i - j + 1) * muji * muji;
-    } else {
-      sji = sum_x_sq[i] - sum_x[i] * sum_x[i] / (i+1);
-    }
-  } else { // unequally weighted version
-    if(sum_w[j] >= sum_w[i]) {
-      sji = 0.0;
-    } else if(j > 0) {
-      ldouble muji = (sum_x[i] - sum_x[j-1]) / (sum_w[i] - sum_w[j-1]);
-      sji = sum_x_sq[i] - sum_x_sq[j-1] - (sum_w[i] - sum_w[j-1]) * muji * muji;
+  // if(sum_w.empty()) { // equally weighted version
+  //   if(j >= i) {
+  //     sji = 0.0;
+  //   } else if(j > 0) {
+  //     ldouble muji = (sum_x[i] - sum_x[j-1]) / (i - j + 1);
+  //     sji = sum_x_sq[i] - sum_x_sq[j-1] - (i - j + 1) * muji * muji;
+  //   } else {
+  //     sji = sum_x_sq[i] - sum_x[i] * sum_x[i] / (i+1);
+  //   }
+  // } else { // unequally weighted version
+  
+  // will never be true?
+    // if(sum_w[j] >= sum_w[i]) {
+    //   sji = 0.0;
+    // } else if(j > 0) {
+    if(j > 0) {
+      ldouble sumji = sum_x[i] - sum_x[j-1];
+      sji = sum_x_sq[i] - sum_x_sq[j-1] -  sumji * sumji / (sum_w[i] - sum_w[j-1]);
     } else {
       sji = sum_x_sq[i] - sum_x[i] * sum_x[i] / sum_w[i];
     }
-  }
+  // }
 
   sji = (sji < 0) ? 0 : sji;
   return sji;

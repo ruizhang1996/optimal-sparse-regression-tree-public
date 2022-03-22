@@ -100,7 +100,9 @@ ldouble fill_dp_matrix_dynamic_stop(const std::vector<double> & x, // data
 
     // fill_row_k_linear_recursive(imin, N-1, 1, q, jseq, S, J, sum_x, sum_x_sq);
     // fill_row_k_linear(imin, N-1, q, S, J, sum_x, sum_x_sq);
-    fill_row_q_SMAWK(imin, N-1, q, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, L2);
+    // Faster when doing <300 data pts
+    // fill_row_q_SMAWK(imin, N-1, q, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, L2);
+    fill_row_q_log_linear(imin, N-1, q, q, N-1, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, L2);
     
     if (S[q-1][N-1] - S[q][N-1] < reg) {
       return S[q-1][N-1] + q * reg;

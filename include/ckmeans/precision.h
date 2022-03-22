@@ -1,2 +1,2 @@
-typedef long double ldouble;
-// typedef double ldouble;
+// typedef long double ldouble;
+typedef double ldouble;
