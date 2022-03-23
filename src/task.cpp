@@ -9,27 +9,31 @@ Task::Task(Bitmask const & capture_set, Bitmask const & feature_set, unsigned in
     float const regularization = Configuration::regularization;
     bool terminal = (this -> _capture_set.count() <= 1) || (this -> _feature_set.empty());
 
-    float potential, min_loss, max_loss;
+    float potential, min_obj, max_loss;
     unsigned int target_index;
     // Careful, the following method modifies capture_set
-    State::dataset.summary(this -> _capture_set, this -> _information, potential, min_loss, max_loss, target_index, id);
+    State::dataset.summary(this -> _capture_set, this -> _information, potential, min_obj, max_loss, target_index, id);
 
     this -> _base_objective = max_loss + regularization;
     // Add lambda because we know this has at least 2 leaves
-    float const lowerbound = std::min(this -> _base_objective, min_loss);
+    float const lowerbound = std::min(this -> _base_objective, min_obj);
     float const upperbound = this -> _base_objective;
 
-    if ( (1.0 - min_loss < regularization ) // Insufficient maximum accuracy
-        || ( potential < 2 * regularization && (1.0 - max_loss) < regularization) ) // Leaf Support + Incremental Accuracy
-    { // Insufficient support and leaf accuracy
-        // Node is provably not part of any optimal tree
-        this -> _lowerbound = this -> _base_objective;
-        this -> _upperbound = this -> _base_objective;
-        this -> _feature_set.clear();
-    } else if (
-        max_loss - min_loss < regularization // Accuracy
-        || potential < 2 * regularization // Leaf Support
-        || terminal
+    // TODO: derive new bound here
+    // if ( (1.0 - min_obj < regularization ) // Insufficient maximum accuracy
+    //     || ( potential < 2 * regularization && (1.0 - max_loss) < regularization) ) // Leaf Support + Incremental Accuracy
+    // { // Insufficient support and leaf accuracy
+    //     // Node is provably not part of any optimal tree
+    //     this -> _lowerbound = this -> _base_objective;
+    //     this -> _upperbound = this -> _base_objective;
+    //     this -> _feature_set.clear();
+    // } else if (
+    if (
+        terminal
+        || potential <= 0
+        // max_loss - min_obj < regularization // Accuracy
+        // || potential < 2 * regularization // Leaf Support
+        // || terminal
     ) {
         // Node is provably not an internal node of any optimal tree
         this -> _lowerbound = this -> _base_objective;

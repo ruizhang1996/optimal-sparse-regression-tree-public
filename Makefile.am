@@ -78,7 +78,8 @@ gosdt_SOURCES = \
 	src/main.hpp \
 	include/ckmeans/Ckmeans.1d.dp.cpp \
 	include/ckmeans/dynamic_prog.cpp \
-	include/ckmeans/fill_SMAWK.cpp 
+	include/ckmeans/fill_SMAWK.cpp \
+	include/ckmeans/fill_log_linear.cpp
 
 if INCLUDE_TESTS
 bin_PROGRAMS += gosdt_test

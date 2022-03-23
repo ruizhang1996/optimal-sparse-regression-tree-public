@@ -116,7 +116,6 @@ void Dataset::construct_majority(void) {
         clustered_targets.emplace_back(mean);
         cluster_order.emplace_back(cluster_idx++);
     }
-    double sumtest = std::accumulate(cluster_loss.begin(), cluster_loss.end(), 0.0);
 
     // Step 3: Sort clustered target values and update data index to cluster
     // index mapping
@@ -281,7 +280,13 @@ void Dataset::subset(unsigned int feature_index, Bitmask & negative, Bitmask & p
     this -> features[feature_index].bit_and(positive, false);
 }
 
-void Dataset::summary(Bitmask const & capture_set, float & info, float & potential, float & min_loss, float & max_loss, unsigned int & target_index, unsigned int id) const {
+// Performance Boost ideas:
+// 1. Store everything in summary 
+// 2. Introduce scope and apply it to kmeans so that it could be even tighter 
+// 3. Check equiv (points lower bound + 2 * reg) before using Kmeans to
+//    determine if we need more split as it has a way lower overhead
+
+void Dataset::summary(Bitmask const & capture_set, float & info, float & potential, float & min_obj, float & max_loss, unsigned int & target_index, unsigned int id) const {
     summary_calls++;
     Bitmask & buffer = State::locals[id].columns[0];
     unsigned int * distribution; // The frequencies of each class
@@ -323,9 +328,9 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     
     // cum_percent += percent;
 
-    min_loss = equivalent_point_loss;
+    min_obj = equivalent_point_loss;
     max_loss = min_cost;
-    potential = max_loss - min_loss;
+    potential = max_loss + Configuration::regularization - min_obj;
     info = information;
     target_index = cost_minimizer;
 }
