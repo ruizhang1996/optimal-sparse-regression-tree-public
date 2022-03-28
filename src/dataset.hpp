@@ -94,6 +94,7 @@ public:
 
     mutable int summary_calls = 0;
     mutable int compute_kmeans_calls = 0;
+    mutable int summary_calls_has_gap = 0;
     mutable double cum_percent = 0;
 
 private:
@@ -109,11 +110,13 @@ private:
     // std::vector< Bitmask > columns; // Binary representation of columns
     // std::vector< std::vector< float > > distributions; // Class distributions for each row
 
+    // N := Number of datapoints in the original dataset
+    // E := Number of equivalent points (clusters) in the original dataset 
     std::vector< Bitmask > features; // Binary representation of columns
-    std::vector< double > targets; // Float vector of size # of rows
-    std::vector< double > clustered_targets; // Float vector of size <= # of rows
-    std::vector< double > cluster_loss; // Float vector of size <= # of rows
-    std::vector< int > clustered_targets_mapping; // Index of order for targets
+    std::vector< double > targets; // Float vector of size N
+    std::vector< double > clustered_targets; // Float vector of size E
+    std::vector< double > cluster_loss; // Float vector of size E
+    std::vector< int > clustered_targets_mapping; // Size N to index in E (value ranging from 0 - (E-1))
     std::vector< Bitmask > rows; // Binary representation of rows
     std::vector< Bitmask > feature_rows; // Binary representation of rows
     std::vector< double > target_rows; // Binary representation of rows

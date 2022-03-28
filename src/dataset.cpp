@@ -203,9 +203,11 @@ void Dataset::normalize_data() {
     for (int i = 0; i < size(); i++) {
         targets[i] = targets[i] / loss_normalizer;
     }
-    double loss_normalizer_1 = ssq_loss(Bitmask(size(), true));
+    // double loss_normalizer_1 = ssq_loss(Bitmask(size(), true));
 }
 
+// N := Number of datapoints in the original dataset
+// E := Number of equivalent points (clusters) in the original dataset 
 double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
     int max = capture_set.size();
     
@@ -217,7 +219,8 @@ double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
     }
     double correction = 0;
     
-    std::vector< int > count(clustered_targets_mapping.size());
+    // count: E
+    std::vector< int > count(clustered_targets.size());
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
         count[clustered_targets_mapping[i]]++;
         correction += targets[i] * targets[i];
@@ -324,9 +327,12 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     // float diff = equivalent_point_loss - equivalent_point_loss_1;
 
     // float gap = max_loss_1 - equivalent_point_loss_1;
-    // float percent = gap <= 0.0001 ? 0 : diff / gap;
-    
-    // cum_percent += percent;
+    // if (gap > 0.0001) {
+    //     float percent = diff / gap;
+    //     summary_calls_has_gap++;
+    //     cum_percent += percent;
+        
+    // }
 
     min_obj = equivalent_point_loss;
     max_loss = min_cost;
