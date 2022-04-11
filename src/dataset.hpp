@@ -92,6 +92,8 @@ public:
 
     void tile(Bitmask const & filter, Bitmask const & selector, Tile & tile_output, std::vector< int > & order, unsigned int id) const;
 
+    void target_value(Bitmask capture_set, std::string & prediction_value) const;
+
     mutable int summary_calls = 0;
     mutable int compute_kmeans_calls = 0;
     mutable int summary_calls_has_gap = 0;
@@ -147,7 +149,6 @@ private:
 
     double ssq_loss(Bitmask capture_set) const;
     double ssq_loss(std::vector< int > capture_set_idx) const;
-    // double compute_loss(Bitmask capture_set) const;
 };
 
 #endif

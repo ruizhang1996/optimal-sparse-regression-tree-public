@@ -131,6 +131,10 @@ gosdt_test_SOURCES = \
 	test/test_queue.hpp \
 	test/test_consistency.hpp \
 	test/test.cpp \
-	test/test.hpp
+	test/test.hpp \
+	include/ckmeans/Ckmeans.1d.dp.cpp \
+	include/ckmeans/dynamic_prog.cpp \
+	include/ckmeans/fill_SMAWK.cpp \
+	include/ckmeans/fill_log_linear.cpp
 
 endif

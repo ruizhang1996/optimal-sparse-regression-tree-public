@@ -5,7 +5,7 @@ void Optimizer::models(std::unordered_set< Model > & results) {
     models(this -> root, local_results);
     std::cout << "Summary calls: " << State::dataset.summary_calls << std::endl;
     std::cout << "Kmeans calls: " << State::dataset.compute_kmeans_calls << std::endl;
-    std::cout << "Average percent: " << State::dataset.cum_percent / State::dataset.summary_calls_has_gap << std::endl;
+    // std::cout << "Average percent: " << State::dataset.cum_percent / State::dataset.summary_calls_has_gap << std::endl;
     // std::cout << "Local Size: " << local_results.size() << std::endl;
     // std::cout << "Result Size: " << results.size() << std::endl;
     // Copy into final results

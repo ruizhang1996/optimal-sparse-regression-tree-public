@@ -7,10 +7,9 @@ Model::Model(std::shared_ptr<Bitmask> capture_set) {
     float info, potential, min_loss, max_loss;
     unsigned int target_index;
     State::dataset.summary(* capture_set, info, potential, min_loss, max_loss, target_index, 0);
-    State::dataset.encoder.target_value(target_index, prediction_value);
+    State::dataset.target_value(* capture_set, prediction_value);
     State::dataset.encoder.header(prediction_name);
     State::dataset.encoder.target_type(prediction_type);
-
     this -> binary_target = target_index;
     this -> name = prediction_name;
     this -> type = prediction_type;
@@ -19,6 +18,7 @@ Model::Model(std::shared_ptr<Bitmask> capture_set) {
     this -> _complexity = Configuration::regularization;
     this -> capture_set = capture_set;
     this -> terminal = true;
+    std:: cout << "prediction value: " << this -> prediction << std::endl;
 }
 
 Model::Model(unsigned int binary_feature_index, std::shared_ptr<Model> negative, std::shared_ptr<Model> positive) {
@@ -246,7 +246,8 @@ void Model::to_json(json & node) const {
 
 void Model::_to_json(json & node) const {
     if (this -> terminal) {
-        node["prediction"] = this -> binary_target;
+        std:: cout << this -> prediction << std::endl;
+        node["prediction"] = std::stod(this -> prediction);
         node["loss"] = this -> _loss; // This value is correct regardless of translation
         node["complexity"] = Configuration::regularization;
     } else {
@@ -269,11 +270,12 @@ void Model::_to_json(json & node) const {
 void Model::translate_json(json & node, translation_type const & main, translation_type const & alternative) const {
     if (node.contains("prediction")) {
         // index translation to undo any reordering from tile normalization
-        int cannonical_index = (int)(node["prediction"]) + State::dataset.width();
-        int normal_index = std::distance(main.begin(), std::find(main.begin(), main.end(), cannonical_index));
-        int alternative_index = (int)(alternative.at(normal_index)) - State::dataset.width();
+        //int cannonical_index = (int)(node["prediction"]) + State::dataset.width();
+        //int normal_index = std::distance(main.begin(), std::find(main.begin(), main.end(), cannonical_index));
+        //int alternative_index = (int)(alternative.at(normal_index)) - State::dataset.width();
 
-        node["prediction"] = alternative_index;
+        //node["prediction"] = alternative_index;
+        return;
     } else if (node.contains("feature")) {
         // index translation to undo any reordering from tile normalization
         bool flip = false;
@@ -305,16 +307,16 @@ void Model::translate_json(json & node, translation_type const & main, translati
 void Model::decode_json(json & node) const {
     if (node.contains("prediction")) {
         std::string prediction_name, prediction_value;
-        State::dataset.encoder.target_value(node["prediction"], prediction_value);
+        //State::dataset.encoder.target_value(node["prediction"], prediction_value);
         State::dataset.encoder.header(prediction_name);
 
-        if (Encoder::test_integral(prediction_value)) {
-            node["prediction"] = atoi(prediction_value.c_str());
-        } else if (Encoder::test_rational(prediction_value)) {
-            node["prediction"] = atof(prediction_value.c_str());
-        } else {
-            node["prediction"] = prediction_value;
-        }
+//        if (Encoder::test_integral(prediction_value)) {
+//            node["prediction"] = atoi(prediction_value.c_str());
+//        } else if (Encoder::test_rational(prediction_value)) {
+//            node["prediction"] = atof(prediction_value.c_str());
+//        } else {
+//            node["prediction"] = prediction_value;
+//        }
         node["name"] = prediction_name;
     } else if (node.contains("feature")) {
         // index decoding from binary feature to original feature space

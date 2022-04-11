@@ -63,7 +63,7 @@ void Dataset::construct_bitmasks(std::istream & data_source) {
     this -> features.resize(number_of_binary_features, number_of_samples);
     this -> feature_rows.resize(number_of_samples, number_of_binary_features);
     this -> targets.resize(number_of_binary_targets, number_of_samples);
-    this -> target_rows.resize(number_of_samples, number_of_binary_targets);
+    // this -> target_rows.resize(number_of_samples, number_of_binary_targets);
     
     
     this -> targets = encoder.read_numerical_targets();
@@ -165,6 +165,15 @@ void Dataset::construct_ordering(void) {
     // this -> targets_ordering = order;
 }
 
+void Dataset::target_value(Bitmask capture_set, std::string & prediction_value) const{
+    int max = capture_set.size();
+    double sum = 0.0;
+    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+        sum += targets[i];
+    }
+    int count = capture_set.count();
+    prediction_value = std::to_string(sum/count);
+}
 double Dataset::ssq_loss(Bitmask capture_set) const {
     double cumsum1 = 0;
     double cumsum2 = 0;
@@ -203,6 +212,7 @@ void Dataset::normalize_data() {
     for (int i = 0; i < size(); i++) {
         targets[i] = targets[i] / loss_normalizer;
     }
+    std::cout << "loss_normalizer: " << loss_normalizer << std::endl;
     // double loss_normalizer_1 = ssq_loss(Bitmask(size(), true));
 }
 
