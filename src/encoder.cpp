@@ -175,7 +175,8 @@ void Encoder::parse(std::vector< std::vector< std::string > > const & rows) {
 
     // Override Type Inference for Target Column
     // This ensures use of equality encoding instead of threshold encoding
-    assert(inferred_types[m - 1] == "Rational");
+    //std:: cout << inferred_types[m - 1] << std:: endl;
+    //assert(inferred_types[m - 1] == "Rational");
     inferred_types[m - 1] = "Categorical";
     for (unsigned int i = 0; i < n; ++i) {
         numerical_targets.emplace_back(atof(rows[i][m-1].c_str()));

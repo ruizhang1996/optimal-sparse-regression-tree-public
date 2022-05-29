@@ -18,7 +18,6 @@ Model::Model(std::shared_ptr<Bitmask> capture_set) {
     this -> _complexity = Configuration::regularization;
     this -> capture_set = capture_set;
     this -> terminal = true;
-    std:: cout << "prediction value: " << this -> prediction << std::endl;
 }
 
 Model::Model(unsigned int binary_feature_index, std::shared_ptr<Model> negative, std::shared_ptr<Model> positive) {
@@ -246,7 +245,6 @@ void Model::to_json(json & node) const {
 
 void Model::_to_json(json & node) const {
     if (this -> terminal) {
-        std:: cout << this -> prediction << std::endl;
         node["prediction"] = std::stod(this -> prediction);
         node["loss"] = this -> _loss; // This value is correct regardless of translation
         node["complexity"] = Configuration::regularization;
