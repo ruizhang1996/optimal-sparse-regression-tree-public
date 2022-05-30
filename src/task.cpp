@@ -31,7 +31,8 @@ Task::Task(Bitmask const & capture_set, Bitmask const & feature_set, unsigned in
     if (
         terminal
         || potential <= 0
-        // max_loss - min_obj < regularization // Accuracy
+        || (Configuration::depth_budget != 0 && capture_set.get_depth_budget() == 1)
+        || max_loss - min_obj < regularization // Accuracy
         // || potential < 2 * regularization // Leaf Support
         // || terminal
     ) {
