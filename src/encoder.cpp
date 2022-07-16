@@ -7,8 +7,10 @@ Encoder::Encoder(std::istream & input) {
     std::vector< std::vector< std::string > > tokens;
     tokenize(input, tokens); // Produce string tokens from the input
     parse(tokens); // Parse the tokens to infer the type of each feature
-    build(); // Build a set of encoding rules for each featuree
+    build(); // Build a set of encoding rules for each feature
 
+    if(Configuration::weights.size()){this->weights = Configuration::weights;}
+    else{this -> weights.resize(samples(), 1);}
     // reindex has been disabled since it interferes with the binary search of the new ordinal feature bound
     // reindex(tokens); // Determine an efficient ordering of encoding rules
 
@@ -507,3 +509,5 @@ unsigned int Encoder::binary_features(void) const {
 unsigned int Encoder::binary_targets(void) const {
     return this -> number_of_binary_targets;
 }
+
+std::vector<double> Encoder::get_weights() {return this -> weights;}

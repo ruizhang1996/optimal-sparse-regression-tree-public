@@ -117,6 +117,9 @@ public:
     // The boundary indices for binary features that belong to the same ordinal feature.
     std::vector< std::pair< unsigned int, unsigned int > > boundaries;
 
+    //@return the weights of sample
+    std::vector<double> get_weights(void);
+
 private:
     // Original data
     std::vector< std::string > headers;
@@ -128,7 +131,7 @@ private:
     unsigned int number_of_binary_targets = 0;
 
     // The importance given to each sample
-    std::vector< float > weights;
+    std::vector< double > weights;
 
     // Summaries used to describe each column
     std::vector< std::set< std::string > > values;

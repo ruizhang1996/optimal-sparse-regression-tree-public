@@ -6,27 +6,14 @@ Dataset::~Dataset(void) {}
 Dataset::Dataset(std::istream & data_source) { load(data_source); }
 
 // Loads the binary-encoded data set into precomputed form:
-// Step 1: Build bitmasks for each column and row of the dataset, allowing fast parallel operations
-// Step 2: Build the cost matrix. Either from values in an input file or a specified mode.
-// Step 3: Compute columnar aggregations of the cost matrix to speed up some calculations from K^2 to K
-// Step 4: Data set shape is stored
-//   The overall shape of the data set is stored for indexing later
 void Dataset::load(std::istream & data_source) {
-    // Step 1: Construct all rows, features, and targets in binary form
+    // Construct all rows, features in binary form
     construct_bitmasks(data_source);
-
-
-    // Step 2: Initialize the cost matrix
-    // construct_cost_matrix();
-
-    // Step 3: Build the majority and minority costs based on the cost matrix
-    // aggregate_cost_matrix();
-    
-    // construct_ordering();
+    // Normalize target column
     normalize_data();
 
-    // Step 4: Build the majority bitmask indicating whether a point is in the majority group
-    construct_majority();
+    // Build cluster and cluster target indicating whether a point is the equivalent set
+    construct_clusters();
     
     if (Configuration::verbose) {
         std::cout << "Dataset Dimensions: " << height() << " x " << width() << " x " << depth() << std::endl;
@@ -39,36 +26,21 @@ void Dataset::clear(void) {
     this -> targets.clear();
     this -> rows.clear();
     this -> feature_rows.clear();
-    this -> target_rows.clear();
-    // this -> costs.clear();
-    this -> match_costs.clear();
-    this -> mismatch_costs.clear();
-    this -> max_costs.clear();
-    this -> min_costs.clear();
-    this -> diff_costs.clear();
-    this -> majority = Bitmask();
 }
 
 void Dataset::construct_bitmasks(std::istream & data_source) {
     this -> encoder = Encoder(data_source);
     std::vector< Bitmask > rows = this -> encoder.read_binary_rows();
     unsigned int number_of_samples = this -> encoder.samples(); // Number of samples in the dataset
-    unsigned int number_of_rows = 0; // Number of samples after compressions
     unsigned int number_of_binary_features = this -> encoder.binary_features(); // Number of source features
-    unsigned int number_of_binary_targets = this -> encoder.binary_targets(); // Number of target features
+    // unsigned int number_of_binary_targets = this -> encoder.binary_targets(); // Number of target features
     this -> _size = number_of_samples;
-
+    this -> weights = encoder.get_weights();
     this -> rows = this -> encoder.read_binary_rows();
 
     this -> features.resize(number_of_binary_features, number_of_samples);
     this -> feature_rows.resize(number_of_samples, number_of_binary_features);
-    this -> targets.resize(number_of_binary_targets, number_of_samples);
-    // this -> target_rows.resize(number_of_samples, number_of_binary_targets);
-    
-    
     this -> targets = encoder.read_numerical_targets();
-    // this -> target_rows = encoder.read_numerical_targets();
-
 
     for (unsigned int i = 0; i < number_of_samples; ++i) {
         for (unsigned int j = 0; j < number_of_binary_features; ++j) {
@@ -76,10 +48,11 @@ void Dataset::construct_bitmasks(std::istream & data_source) {
             this -> feature_rows[i].set(j, bool(rows[i][j]));
         }
     }
+    //TODO: check depth for regression
     this -> shape = std::tuple< int, int, int >(this -> rows.size(), this -> features.size(), this -> targets.size());
 };
 
-void Dataset::construct_majority(void) {
+void Dataset::construct_clusters(void) {
     std::vector< Bitmask > keys(height(), width());
     for (unsigned int i = 0; i < height(); ++i) {
         for (unsigned int j = 0; j < width(); ++j) {
@@ -102,18 +75,20 @@ void Dataset::construct_majority(void) {
     std::vector< int > cluster_order;
     std::vector< double > cluster_loss;
     std::vector< int > clustered_targets_mapping(size());
+    // std::vector<double> cluster_weights;
     int cluster_idx = 0;
     for (auto it = clusters.begin(); it != clusters.end(); ++it) {
         std::vector< int > const & cluster = it -> second;
         std::vector< double > cluster_values;
+        double sum_weights;
         for (int idx : cluster) {
-            cluster_values.emplace_back(targets[idx]);
+            cluster_values.emplace_back(weights[idx] * targets[idx]);
             clustered_targets_mapping[idx] = cluster_idx;
         }
-        cluster_loss.emplace_back(ssq_loss(cluster));
+        cluster_loss.emplace_back(ssq_loss(cluster, sum_weights));
         double sum = std::accumulate(cluster_values.begin(), cluster_values.end(), 0.0);
-        double mean = sum / cluster_values.size();
-        clustered_targets.emplace_back(mean);
+        double target = sum / sum_weights;
+        clustered_targets.emplace_back(target);
         cluster_order.emplace_back(cluster_idx++);
     }
 
@@ -177,6 +152,35 @@ void Dataset::target_value(Bitmask capture_set, std::string & prediction_value) 
 double Dataset::ssq_loss(Bitmask capture_set) const {
     double cumsum1 = 0;
     double cumsum2 = 0;
+    double wsum = 0;
+    int max = capture_set.size();
+    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+        cumsum1 += weights[i] * targets[i];
+        cumsum2 += weights[i] * targets[i] * targets[i];
+        wsum += weights[i];
+    }
+    // int count = capture_set.count();
+    // TODO: check overhead of weights implementation
+    return cumsum2 - cumsum1 * cumsum1 / wsum;
+}
+
+double Dataset::ssq_loss(std::vector< int > capture_set_idx, double & sum_weights) const {
+    double cumsum1 = 0;
+    double cumsum2 = 0;
+    // int count = 0;
+    double wsum = 0;
+    for (int i : capture_set_idx) {
+        cumsum1 += weights[i] * targets[i];
+        cumsum2 += weights[i] * targets[i] * targets[i];
+        wsum += weights[i];
+    }
+    sum_weights = wsum;
+    return cumsum2 - cumsum1 * cumsum1 / wsum;
+}
+
+double Dataset::sad_loss(Bitmask capture_set) const {
+    double cumsum1 = 0;
+    double cumsum2 = 0;
     int max = capture_set.size();
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
         cumsum1 += targets[i];
@@ -186,34 +190,29 @@ double Dataset::ssq_loss(Bitmask capture_set) const {
     return cumsum2 - cumsum1 * cumsum1 / count;
 }
 
-double Dataset::ssq_loss(std::vector< int > capture_set_idx) const {
-    int max = capture_set_idx.size();
-
-    double cumsum1 = 0;
-    double cumsum2 = 0;
-    int count = 0;
-    for (int i : capture_set_idx) {
-        cumsum1 += targets[i];
-        cumsum2 += targets[i] * targets[i];
-        count++;
-    }
-    return cumsum2 - cumsum1 * cumsum1 / count;
-}
-
-// double Dataset::compute_loss(Bitmask capture_set) const {
-//     // return compute_loss(capture_set) / loss_normalizer;
-//     return 0;
-// }
-
 void Dataset::normalize_data() {
+    double loss_normalizer;
+    switch (Configuration::metric) {
+        case Configuration::l2_loss: {
+            loss_normalizer = std::sqrt(ssq_loss(Bitmask(size(), true)));
+            break;
+        }
+        case Configuration::l1_loss: {
+            loss_normalizer = sad_loss(Bitmask(size(), true));
+            break;
+        }
+        default:{
+            std::stringstream reason;
+            reason << "Unsupported Metric: " << Configuration::metric;
+            throw IntegrityViolation("Dataset::normalize_data", reason.str());
+        }
+    }
 
-    double loss_normalizer = std::sqrt(ssq_loss(Bitmask(size(), true)));
 
     for (int i = 0; i < size(); i++) {
         targets[i] = targets[i] / loss_normalizer;
     }
     std::cout << "loss_normalizer: " << loss_normalizer << std::endl;
-    // double loss_normalizer_1 = ssq_loss(Bitmask(size(), true));
 }
 
 // N := Number of datapoints in the original dataset
@@ -225,18 +224,17 @@ double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
     double reg = Configuration::regularization;
     
     if (normalizer == 1) {
-        return ssq_loss(capture_set) + reg;
+        return reg;
     }
     double correction = 0;
     
     // count: E
-    std::vector< int > count(clustered_targets.size());
+    std::vector< double > count(clustered_targets.size());
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
-        count[clustered_targets_mapping[i]]++;
-        correction += targets[i] * targets[i];
+        count[clustered_targets_mapping[i]] += weights[i];
+        correction += weights[i] * targets[i] * targets[i];
     }
-    
-    // Why do you need this? 
+
     std::vector< double > weights;
     std::vector< double > values;
 
@@ -307,16 +305,15 @@ void Dataset::subset(unsigned int feature_index, Bitmask & negative, Bitmask & p
 void Dataset::summary(Bitmask const & capture_set, float & info, float & potential, float & min_obj, float & max_loss, unsigned int & target_index, unsigned int id) const {
     summary_calls++;
     Bitmask & buffer = State::locals[id].columns[0];
-    unsigned int * distribution; // The frequencies of each class
-    distribution = (unsigned int *) alloca(sizeof(unsigned int) * depth());
+    //unsigned int * distribution; // The frequencies of each class
+    //distribution = (unsigned int *) alloca(sizeof(unsigned int) * depth());
 
-    float min_cost = std::numeric_limits<float>::max();
     unsigned int cost_minimizer = 0;
 
-    min_cost = ssq_loss(capture_set);
-    float max_cost_reduction = 0.0;
+    max_loss = ssq_loss(capture_set);
+    //float max_cost_reduction = 0.0;
     float equivalent_point_loss = 0.0;
-    float support = (float)(capture_set.count()) / (float)(height());
+    //float support = (float)(capture_set.count()) / (float)(height());
     float information = 0.0;
     
     // if (summary_calls > 30000) {
@@ -350,7 +347,6 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     // }
 
     min_obj = equivalent_point_loss;
-    max_loss = min_cost;
     potential = max_loss + Configuration::regularization - min_obj;
     info = information;
     target_index = cost_minimizer;

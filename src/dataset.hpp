@@ -121,24 +121,17 @@ private:
     std::vector< int > clustered_targets_mapping; // Size N to index in E (value ranging from 0 - (E-1))
     std::vector< Bitmask > rows; // Binary representation of rows
     std::vector< Bitmask > feature_rows; // Binary representation of rows
-    std::vector< double > target_rows; // Binary representation of rows
-    Bitmask majority; // Binary representation of columns
-    // std::vector< std::vector< float > > costs; // Cost matrix for each type of misprediction
-    std::vector< float > match_costs; // Cost matrix for each type of misprediction
-    std::vector< float > mismatch_costs; // Cost matrix for each type of misprediction
-    std::vector< float > max_costs; // Cost matrix for each type of misprediction
-    std::vector< float > min_costs; // Cost matrix for each type of misprediction
-    std::vector< float > diff_costs; // Cost matrix for each type of misprediction
-    
+    // Bitmask majority; // Binary representation of columns
+    std::vector<double> weights; // Float vector of size N, weights of sample
     
     // Index index; // Index for calculating summaries
     // Index distance_index; // Index for calculating feature distances
 
     void construct_bitmasks(std::istream & input_stream);
-    void construct_cost_matrix(void);
-    void parse_cost_matrix(std::istream & input_stream);
-    void aggregate_cost_matrix(void);
-    void construct_majority(void);
+//    void construct_cost_matrix(void);
+//    void parse_cost_matrix(std::istream & input_stream);
+//    void aggregate_cost_matrix(void);
+    void construct_clusters(void);
 
     void construct_ordering(void);
     
@@ -148,7 +141,9 @@ private:
     double compute_equivalent_points_lower_bound(Bitmask capture_set) const;
 
     double ssq_loss(Bitmask capture_set) const;
-    double ssq_loss(std::vector< int > capture_set_idx) const;
+    double ssq_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
+
+    double sad_loss(Bitmask capture_set) const;
 };
 
 #endif

@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
 
 	// Print messages to help user ensure they've provided the correct inputs
 	if (Configuration::verbose) {
-		std::cout << "Generalized Optimal Sparse Decision Tree" << std::endl;
+		std::cout << "Generalized Optimal Sparse Regression Tree" << std::endl;
 		std::cout << "Using data set: " << argv[1] << std::endl;
 	}
 	std::string result;

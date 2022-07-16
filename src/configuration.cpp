@@ -1,3 +1,4 @@
+
 #include "configuration.hpp"
 
 float Configuration::uncertainty_tolerance = 0.0;
@@ -14,6 +15,8 @@ bool Configuration::verbose = false;
 bool Configuration::diagnostics = false;
 
 unsigned char Configuration::depth_budget = 0;
+bool Configuration::reference_LB = false;
+std::string Configuration::path_to_labels = "";
 
 bool Configuration::balance = false;
 bool Configuration::look_ahead = true;
@@ -31,6 +34,9 @@ std::string Configuration::timing = "";
 std::string Configuration::trace = "";
 std::string Configuration::tree = "";
 std::string Configuration::profile = "";
+
+char Configuration::metric;
+std::vector<double> Configuration::weights;
 
 void Configuration::configure(std::istream & source) {
     json config;
@@ -53,7 +59,12 @@ void Configuration::configure(json config) {
     if (config.contains("diagnostics")) { Configuration::diagnostics = config["diagnostics"]; }
 
     if (config.contains("depth_budget")) { Configuration::depth_budget = config["depth_budget"]; }
-
+    if (config.contains("reference_LB")) {
+        Configuration::reference_LB = config["reference_LB"];
+    }else {
+        //the alias "warm_LB" in configuration files is sometimes also used to refer to reference_LB
+        if (config.contains("warm_LB")) { Configuration::reference_LB = config["warm_LB"]; }
+    }
     if (config.contains("balance")) { Configuration::balance = config["balance"]; }
     if (config.contains("look_ahead")) { Configuration::look_ahead = config["look_ahead"]; }
     if (config.contains("similar_support")) { Configuration::similar_support = config["similar_support"]; }
@@ -70,6 +81,17 @@ void Configuration::configure(json config) {
     if (config.contains("trace")) { Configuration::trace = config["trace"]; }
     if (config.contains("tree")) { Configuration::tree = config["tree"]; }
     if (config.contains("profile")) { Configuration::profile = config["profile"]; }
+
+    if (config.contains("metric")) {
+        if (config["metric"] == "L1") {
+            Configuration::metric = Configuration::l1_loss;
+        } else if (config["metric"] == "L2"){
+            Configuration::metric = Configuration::l2_loss;
+        } else {
+            std::cout << "Unrecognized metric" << std::endl;
+        }
+    }
+    if (config.contains("weights")) {Configuration::weights = config["weights"].get<std::vector<double>>();}
 }
 
 std::string Configuration::to_string(unsigned int spacing) {
