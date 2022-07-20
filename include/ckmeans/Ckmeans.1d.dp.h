@@ -45,6 +45,7 @@ ldouble fill_dp_matrix_dynamic_stop(
     const std::vector<double> & w,
     std::vector< std::vector< ldouble > > & S,
     std::vector< std::vector< size_t > > & J,
+    const enum DISSIMILARITY criterion,
     ldouble reg);
 
 void backtrack(

@@ -143,7 +143,11 @@ private:
     double ssq_loss(Bitmask capture_set) const;
     double ssq_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
 
-    double sad_loss(Bitmask capture_set) const;
+    double sabs_loss(Bitmask capture_set) const;
+    double sabs_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
+
+    double compute_loss(Bitmask capture_set) const;
+    double compute_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
 };
 
 #endif

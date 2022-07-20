@@ -13,7 +13,9 @@ void Dataset::load(std::istream & data_source) {
     normalize_data();
 
     // Build cluster and cluster target indicating whether a point is the equivalent set
-    construct_clusters();
+    if (Configuration::metric == Configuration::l2_loss || !Configuration::k_cluster){
+        construct_clusters();
+    }
     
     if (Configuration::verbose) {
         std::cout << "Dataset Dimensions: " << height() << " x " << width() << " x " << depth() << std::endl;
@@ -40,7 +42,29 @@ void Dataset::construct_bitmasks(std::istream & data_source) {
 
     this -> features.resize(number_of_binary_features, number_of_samples);
     this -> feature_rows.resize(number_of_samples, number_of_binary_features);
-    this -> targets = encoder.read_numerical_targets();
+    // Sort samples based on target if L1 loss
+    std::vector<double> targets = encoder.read_numerical_targets();
+    this -> targets = targets;
+    auto compi = [targets](size_t i, size_t j) {
+        return targets[i] < targets[j];
+    };
+    if (Configuration::metric == Configuration::l1_loss && Configuration::k_cluster){
+        std::vector<int> target_order(number_of_samples);
+        std::iota(target_order.begin(), target_order.end(), 0);
+        std::sort(target_order.begin(), target_order.end(), compi);
+        std::vector<double> sorted_targets(number_of_samples);
+        std::vector<double> sorted_weights(number_of_samples);
+        std::vector<Bitmask> sorted_rows(number_of_samples);
+        for (int i = 0; i < target_order.size(); i++) {
+            sorted_targets[i] = targets[target_order[i]];
+            sorted_weights[i] = weights[target_order[i]];
+            sorted_rows[i] = rows[target_order[i]];
+        }
+        this -> targets = sorted_targets;
+        this -> weights = sorted_weights;
+        this -> rows = sorted_rows;
+    }
+
 
     for (unsigned int i = 0; i < number_of_samples; ++i) {
         for (unsigned int j = 0; j < number_of_binary_features; ++j) {
@@ -85,9 +109,9 @@ void Dataset::construct_clusters(void) {
             cluster_values.emplace_back(weights[idx] * targets[idx]);
             clustered_targets_mapping[idx] = cluster_idx;
         }
-        cluster_loss.emplace_back(ssq_loss(cluster, sum_weights));
+        cluster_loss.emplace_back(compute_loss(cluster, sum_weights));
         double sum = std::accumulate(cluster_values.begin(), cluster_values.end(), 0.0);
-        double target = sum / sum_weights;
+        double target = sum / sum_weights; // TODO check: it seems L1 doesn't depend on cluster_target
         clustered_targets.emplace_back(target);
         cluster_order.emplace_back(cluster_idx++);
     }
@@ -143,11 +167,12 @@ void Dataset::construct_ordering(void) {
 void Dataset::target_value(Bitmask capture_set, std::string & prediction_value) const{
     int max = capture_set.size();
     double sum = 0.0;
+    double wsum = 0.0;
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
         sum += targets[i];
+        wsum += weights[i];
     }
-    int count = capture_set.count();
-    prediction_value = std::to_string(sum/count);
+    prediction_value = std::to_string(sum/wsum);
 }
 double Dataset::ssq_loss(Bitmask capture_set) const {
     double cumsum1 = 0;
@@ -178,16 +203,81 @@ double Dataset::ssq_loss(std::vector< int > capture_set_idx, double & sum_weight
     return cumsum2 - cumsum1 * cumsum1 / wsum;
 }
 
-double Dataset::sad_loss(Bitmask capture_set) const {
-    double cumsum1 = 0;
-    double cumsum2 = 0;
+double Dataset::sabs_loss(Bitmask capture_set) const {
+    double total_weights = 0;
     int max = capture_set.size();
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
-        cumsum1 += targets[i];
-        cumsum2 += targets[i] * targets[i];
+        total_weights += weights[i];
     }
-    int count = capture_set.count();
-    return cumsum2 - cumsum1 * cumsum1 / count;
+    // find median of cluster points
+    int m = capture_set.scan(0, true);
+    double wsum = weights[m];
+    while (wsum < 0.5 * total_weights){
+        m = capture_set.scan(m + 1, true);
+        wsum += weights[m];
+    }
+    double sum = 0;
+    // sum of absolute value
+    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+        sum += abs((targets[i] - targets[m]) * weights[i]);
+    }
+    return sum;
+}
+
+double Dataset::sabs_loss(std::vector< int > capture_set_idx, double & sum_weights) const {
+
+    double total_weights = 0;
+    for (int i : capture_set_idx) {
+        total_weights += weights[i];
+    }
+    sum_weights = total_weights;
+    // find median of cluster points
+    int m = 0;
+    double wsum = weights[capture_set_idx[m]];
+    while (wsum < 0.5 * total_weights){
+        m++;
+        wsum += weights[capture_set_idx[m]];
+    }
+    double sum = 0;
+    // sum of absolute value
+    for (int i : capture_set_idx) {
+        sum += abs((targets[i] - targets[capture_set_idx[m]]) * weights[i]);
+    }
+    return sum;
+}
+
+double Dataset::compute_loss(Bitmask capture_set) const{
+    double loss = 0;
+    switch (Configuration::metric) {
+        case Configuration::l2_loss:
+            loss = ssq_loss(capture_set);
+            break;
+        case Configuration::l1_loss:
+            loss = sabs_loss(capture_set);
+            break;
+        default:
+            std::stringstream reason;
+            reason << "Unsupported Metric: " << Configuration::metric;
+            throw IntegrityViolation("Dataset::compute_loss(Bitmask): ", reason.str());
+    }
+    return loss;
+}
+
+double Dataset::compute_loss(std::vector< int > capture_set_idx, double & sum_weights) const{
+    double loss = 0;
+    switch (Configuration::metric) {
+        case Configuration::l2_loss:
+            loss = ssq_loss(capture_set_idx, sum_weights);
+            break;
+        case Configuration::l1_loss:
+            loss = sabs_loss(capture_set_idx, sum_weights);
+            break;
+        default:
+            std::stringstream reason;
+            reason << "Unsupported Metric: " << Configuration::metric;
+            throw IntegrityViolation("Dataset::compute_loss(vector, sum_weights): ", reason.str());
+    }
+    return loss;
 }
 
 void Dataset::normalize_data() {
@@ -198,7 +288,7 @@ void Dataset::normalize_data() {
             break;
         }
         case Configuration::l1_loss: {
-            loss_normalizer = sad_loss(Bitmask(size(), true));
+            loss_normalizer = sabs_loss(Bitmask(size(), true));
             break;
         }
         default:{
@@ -218,52 +308,67 @@ void Dataset::normalize_data() {
 // N := Number of datapoints in the original dataset
 // E := Number of equivalent points (clusters) in the original dataset 
 double Dataset::compute_kmeans_lower_bound(Bitmask capture_set) const {
+
     int max = capture_set.size();
-    
-    int normalizer = capture_set.count();
+
     double reg = Configuration::regularization;
     
-    if (normalizer == 1) {
+    if (capture_set.count() == 1) {
         return reg;
     }
-    double correction = 0;
-    
-    // count: E
-    std::vector< double > count(clustered_targets.size());
-    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
-        count[clustered_targets_mapping[i]] += weights[i];
-        correction += weights[i] * targets[i] * targets[i];
-    }
-
-    std::vector< double > weights;
+    ldouble min;
+    std::vector< double > w;
     std::vector< double > values;
 
-    // TODO: we can precompute all the sum of squares so one less passthrough
-    for (int i = 0; i < count.size(); i++) {
-        if (count[i] > 0) {
-            weights.emplace_back(count[i]);
-            values.emplace_back(clustered_targets[i]);
-            correction -= clustered_targets[i] * clustered_targets[i] * count[i];
+    if (Configuration::metric == Configuration::l2_loss){
+        double correction = 0;
+
+        // count: E
+        std::vector< double > count(clustered_targets.size());
+        for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+            count[clustered_targets_mapping[i]] += weights[i];
+            correction += weights[i] * targets[i] * targets[i];
         }
+
+        // TODO: we can precompute all the sum of squares so one less passthrough
+        for (int i = 0; i < count.size(); i++) {
+            if (count[i] > 0) {
+                w.emplace_back(count[i]);
+                values.emplace_back(clustered_targets[i]);
+                correction -= clustered_targets[i] * clustered_targets[i] * count[i];
+            }
+        }
+
+        int N = w.size();
+        int Kmax = std::min(100, N);
+        std::vector< std::vector< ldouble > > S( Kmax, std::vector<ldouble>(N) );
+        std::vector< std::vector< size_t > > J( Kmax, std::vector<size_t>(N) );
+
+        // TODO: add dynamically assigned Kmax via scope
+        min = fill_dp_matrix_dynamic_stop(values, w, S, J, L2, reg) + correction;
+
     }
-    
-    int N = weights.size();
-    int Kmax = std::min(100, N);
-    std::vector< std::vector< ldouble > > S( Kmax, std::vector<ldouble>(N) );
-    std::vector< std::vector< size_t > > J( Kmax, std::vector<size_t>(N) );
-    
-    // TODO: add dynamically assigned Kmax via scope
-    ldouble min = fill_dp_matrix_dynamic_stop(values, weights, S, J, reg) + correction;
+    else{
+        for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+            w.emplace_back(weights[i]);
+            values.emplace_back(targets[i]);
+        }
+        int N = w.size();
+        int Kmax = std::min(100, N);
+        std::vector< std::vector< ldouble > > S( Kmax, std::vector<ldouble>(N) );
+        std::vector< std::vector< size_t > > J( Kmax, std::vector<size_t>(N) );
 
+        // TODO: add dynamically assigned Kmax via scope
+        min = fill_dp_matrix_dynamic_stop(values, w, S, J, L1, reg);
+    }
     return min;
-
 }
 double Dataset::compute_equivalent_points_lower_bound(Bitmask capture_set) const {
     int max = capture_set.size();
     
     
     double sum_loss = 0;
-    std::vector< int > count(clustered_targets_mapping.size());
+    std::vector< int > count(clustered_targets.size());
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
         if (count[clustered_targets_mapping[i]] == 0) {
             sum_loss += cluster_loss[clustered_targets_mapping[i]];
@@ -310,7 +415,7 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
 
     unsigned int cost_minimizer = 0;
 
-    max_loss = ssq_loss(capture_set);
+    max_loss = compute_loss(capture_set);
     //float max_cost_reduction = 0.0;
     float equivalent_point_loss = 0.0;
     //float support = (float)(capture_set.count()) / (float)(height());
@@ -328,7 +433,9 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
         equivalent_point_loss = stored_kmeans_accessor->second;
         stored_kmeans_accessor.release();
     } else {
-        equivalent_point_loss = compute_kmeans_lower_bound(capture_set);
+        if (Configuration::k_cluster){equivalent_point_loss = compute_kmeans_lower_bound(capture_set);}
+        else{equivalent_point_loss = compute_equivalent_points_lower_bound(capture_set);}
+
         auto new_kmeans = std::make_pair(capture_set, equivalent_point_loss);
         State::graph.kmeans.insert(new_kmeans);
         compute_kmeans_calls++;

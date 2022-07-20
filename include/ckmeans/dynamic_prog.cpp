@@ -36,6 +36,7 @@ ldouble fill_dp_matrix_dynamic_stop(const std::vector<double> & x, // data
                     const std::vector<double> & w, // weight
                     std::vector< std::vector< ldouble > > & S,
                     std::vector< std::vector< size_t > > & J,
+                    const enum DISSIMILARITY criterion,
                     ldouble reg)
   /*
    x: One dimension vector to be clustered, must be sorted (in any order).
@@ -102,7 +103,7 @@ ldouble fill_dp_matrix_dynamic_stop(const std::vector<double> & x, // data
     // fill_row_k_linear(imin, N-1, q, S, J, sum_x, sum_x_sq);
     // Faster when doing <300 data pts
     // fill_row_q_SMAWK(imin, N-1, q, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, L2);
-    fill_row_q_log_linear(imin, N-1, q, q, N-1, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, L2);
+    fill_row_q_log_linear(imin, N-1, q, q, N-1, S, J, sum_x, sum_x_sq, sum_w, sum_w_sq, criterion);
     
     if (S[q-1][N-1] - S[q][N-1] < reg) {
       return S[q-1][N-1] + q * reg;

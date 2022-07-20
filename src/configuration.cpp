@@ -27,6 +27,7 @@ bool Configuration::feature_exchange = true;
 bool Configuration::feature_transform = true;
 bool Configuration::rule_list = false;
 bool Configuration::non_binary = false;
+bool Configuration::k_cluster = true;
 
 std::string Configuration::costs = "";
 std::string Configuration::model = "";
@@ -35,7 +36,7 @@ std::string Configuration::trace = "";
 std::string Configuration::tree = "";
 std::string Configuration::profile = "";
 
-char Configuration::metric;
+char Configuration::metric = Configuration::l2_loss;
 std::vector<double> Configuration::weights;
 
 void Configuration::configure(std::istream & source) {
@@ -74,6 +75,7 @@ void Configuration::configure(json config) {
     if (config.contains("feature_transform")) { Configuration::feature_transform = config["feature_transform"]; }
     if (config.contains("rule_list")) { Configuration::rule_list = config["rule_list"]; }
     if (config.contains("non_binary")) { Configuration::non_binary = config["non_binary"]; }
+    if (config.contains("k_cluster")){Configuration::k_cluster = config["k_cluster"];}
 
     if (config.contains("costs")) { Configuration::costs = config["costs"]; }
     if (config.contains("model")) { Configuration::model = config["model"]; }

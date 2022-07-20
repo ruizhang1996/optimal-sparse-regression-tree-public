@@ -6,6 +6,7 @@
     "feature_exchange": false,
     "continuous_feature_exchange": false,
     "rule_list": false,
+    "k_cluster": true,
   
     "diagnostics": true,
     "verbose": true,

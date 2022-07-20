@@ -52,16 +52,16 @@ inline ldouble ssq(
   // } else { // unequally weighted version
   
   // will never be true?
-    // if(sum_w[j] >= sum_w[i]) {
-    //   sji = 0.0;
-    // } else if(j > 0) {
-    if(j > 0) {
+     if(sum_w[j] >= sum_w[i]) {
+       sji = 0.0;
+     } else if(j > 0) {
+
       ldouble sumji = sum_x[i] - sum_x[j-1];
       sji = sum_x_sq[i] - sum_x_sq[j-1] -  sumji * sumji / (sum_w[i] - sum_w[j-1]);
     } else {
       sji = sum_x_sq[i] - sum_x[i] * sum_x[i] / sum_w[i];
     }
-  // }
+
 
   sji = (sji < 0) ? 0 : sji;
   return sji;
@@ -108,7 +108,31 @@ inline ldouble sabs(
       }
     }
   } else { // unequally weighted version
-    // no exact solutions are known.
+      if(sum_w[j] >= sum_w[i]) {
+          sji = 0.0;
+      } else {
+          size_t l = j; // median index
+
+          if (j > 0){
+              while (sum_w[l] < 0.5 * (sum_w[i] - sum_w[j-1]) + sum_w[j-1]){
+                  l++;
+              }
+          }else{
+              while (sum_w[l] < 0.5 * sum_w[i]){
+                  l++;
+              }
+          }
+
+          ldouble x_l = 0.0;
+
+          if (l > 0){x_l = (sum_x[l] - sum_x[l-1]) / (sum_w[l] - sum_w[l-1]);}
+          else{x_l = sum_x[l]/sum_w[l];}
+
+          for (int k = j; k <= i; ++k) {
+              if (k > 0){sji += abs((sum_x[k] - sum_x[k-1]) - (sum_w[k] - sum_w[k-1]) * x_l);}
+              else{sji += abs(sum_x[k] - sum_w[k] * x_l);}
+          }
+      }
   }
 
   sji = (sji < 0) ? 0 : sji;
@@ -126,6 +150,16 @@ inline ldouble dissimilarity(
 {
   ldouble d=0;
 
-  d = ssq(j, i, sum_x, sum_x_sq, sum_w);
+  switch(dis) {
+    case L1:
+            d = sabs(j, i, sum_x, sum_w);
+            break;
+    case L2:
+            d = ssq(j, i, sum_x, sum_x_sq, sum_w);
+            break;
+    case L2Y:
+            d = ssq(j, i, sum_w, sum_w_sq);
+            break;
+  }
   return d;
 }

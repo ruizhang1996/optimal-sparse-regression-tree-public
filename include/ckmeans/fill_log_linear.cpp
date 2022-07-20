@@ -73,7 +73,7 @@ void fill_row_q_log_linear(int imin, int imax, int q,
   for(int j=jhigh; j>=jlow; --j) {
 
     // compute s(j,i)
-    ldouble sji = ssq(j, i, sum_x, sum_x_sq, sum_w);
+    ldouble sji = dissimilarity(criterion, j, i, sum_x, sum_x_sq, sum_w, sum_w_sq);
 
     // MS May 11, 2016 Added:
     if(sji + S[q-1][jlow-1] >= S[q][i]) break;
