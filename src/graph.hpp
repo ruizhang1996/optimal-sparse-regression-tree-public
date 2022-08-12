@@ -39,7 +39,7 @@ public:
         return key.hash();
     }
     static bool equal(Bitmask const & left, Bitmask const & right) {
-        return left == right;
+        return left.equals_without_depth(right);
     }
 };
 

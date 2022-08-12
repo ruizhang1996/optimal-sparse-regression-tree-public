@@ -872,6 +872,16 @@ bool Bitmask::operator==(bitblock * other) const {
     }
     return Bitmask::equals(this -> content, other, this -> _size);
 }
+bool Bitmask::equals_without_depth(Bitmask const & other) const {
+    if (this -> _size == 0 && other._size == 0) { return true; }
+    if (Bitmask::integrity_check && (!valid() || !other.valid())) {
+        std::stringstream reason;
+        reason << "Operating with invalid data";
+        throw IntegrityViolation("Bitmask::operator==", reason.str());
+    }
+    if (size() != other.size()) { return false; }
+    return (mpn_cmp(this -> content, other.data(), this -> _used_blocks) == 0);
+}
 bool Bitmask::operator==(Bitmask const & other) const {
     if (this -> _size == 0 && other._size == 0) { return true; }
     if (Bitmask::integrity_check && (!valid() || !other.valid())) {

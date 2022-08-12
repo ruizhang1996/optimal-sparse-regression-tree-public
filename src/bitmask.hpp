@@ -180,6 +180,8 @@ public:
     // Aliases to copy_from
     Bitmask & operator=(Bitmask const & other);
 
+    bool equals_without_depth(Bitmask const & other) const;
+
     // @returns a pointer to the blocks of this instance
     bitblock * data(void) const;
 
