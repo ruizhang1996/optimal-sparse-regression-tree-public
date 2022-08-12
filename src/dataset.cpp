@@ -434,7 +434,7 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
         stored_kmeans_accessor.release();
     } else {
         if (Configuration::k_cluster){equivalent_point_loss = compute_kmeans_lower_bound(capture_set);}
-        else{equivalent_point_loss = compute_equivalent_points_lower_bound(capture_set);}
+        else{equivalent_point_loss = compute_equivalent_points_lower_bound(capture_set) + 2 * Configuration::regularization;}
 
         auto new_kmeans = std::make_pair(capture_set, equivalent_point_loss);
         State::graph.kmeans.insert(new_kmeans);
