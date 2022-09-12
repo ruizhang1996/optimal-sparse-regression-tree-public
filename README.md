@@ -1,5 +1,8 @@
-# GOSDT Documentation
-Implementation of [Generalized Optimal Sparse Decision Tree](https://arxiv.org/pdf/2006.08690.pdf).
+# OSRT Documentation
+Implementation of [Optimal Sparse Regression Tree](https://arxiv.org/pdf/). This is implemented in [Generalized Optimal Sparse Decision Tree framework](https://github.com/ubc-systopia/gosdt-guesses).
+
+![image](https://user-images.githubusercontent.com/60573138/189567116-0b719588-d670-4038-a242-2cc4be26816b.png)
+
 
 # Table of Content
 - [Usage](#usage)
@@ -171,19 +174,21 @@ The configuration file is a JSON object and has the following structure and defa
   "balance": false,
   "cancellation": true,
   "look_ahead": true,
-  "similar_support": true,
-  "feature_exchange": true,
-  "continuous_feature_exchange": true,
+  "similar_support": false,
+  "feature_exchange": false,
+  "continuous_feature_exchange": false,
   "rule_list": false,
+  "k_cluster": true,
 
   "diagnostics": false,
-  "verbose": false,
+  "verbose": true,
 
   "regularization": 0.05,
+  "depth_budget": 5,
   "uncertainty_tolerance": 0.0,
   "upperbound": 0.0,
 
-  "model_limit": 1,
+  "model_limit": 10000,
   "precision_limit": 0,
   "stack_limit": 0,
   "tile_limit": 0,
@@ -195,7 +200,11 @@ The configuration file is a JSON object and has the following structure and defa
   "profile": "",
   "timing": "",
   "trace": "",
-  "tree": ""
+  "tree": "",
+  "datatset_encoding": "",
+
+  "metric": "L2",
+  "weights": []
 }
 ```
 
@@ -224,6 +233,10 @@ The configuration file is a JSON object and has the following structure and defa
 **continuous_feature_exchange**
  - Values: true or false
  - Description: Enables pruning of pairs continuous of feature thresholds using subset comparison
+
+**k_cluster**
+ - Values: true or false
+ - Description: Enables usage of the k-Means Equivalent Points Bound
 
 **diagnostics**
  - Values: true or false
@@ -331,44 +344,17 @@ The configuration file is a JSON object and has the following structure and defa
 
 ## Optimizing Different Loss Functions
 
-When using the Python interface `python/model/gosdt.py` additional loss functions are available.
-Here is the list of loss functions implemented along with descriptions of their hyperparameters.
+OSRT currently supports weighted L1 and L2 losses.
 
-### Accuracy
-```
-{ "objective": "acc" }
-```
-This optimizes the loss defined as the uniformly weighted number of misclassifications.
+**metric**
+ - Values: string of `L1` or `L2`
+ - Description: specify the loss that OSRT is using
 
-### Balanced Accuracy
-```
-{ "objective": "bacc" }
-```
-This optimizes the loss defined as the number of misclassifications, adjusted for imbalanced representation of positive or negative samples.
+**weights**
+ - Values: array of decimal within [0, 1] of length of the dataset size
+ - Description: specify the weight for the given loss
+ - Special Case: When set to empty array, all data points are weighted equally.
 
-### Weighted Accuracy
-```
-{ "objective": "wacc", "w": 0.5 }
-```
-This optimizes the loss defined as the number of misclassifications, adjusted so that negative samples have a weight of `w` while positive samples have a weight of `1.0`
-
-### F - 1 Score
-```
-{ "objective": "f1", "w": 0.9 }
-```
-This optimizes the loss defined as the [F-1](https://en.wikipedia.org/wiki/F1_score) score of the model's predictions.
-
-### Area under the Receiver Operanting Characteristics Curve
-```
-{ "objective": "auc" }
-```
-This maximizes the area under the [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) curve formed by varying the prediction of the leaves.
-
-### Partial Area under the Receiver Operanting Characteristics Curve
-```
-{ "objective": "pauc", "theta": 0.1 }
-```
-This maximizes the partial area under the [ROC](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) curve formed by varying the prediction of the leaves. The area is constrained so that false-positive-rate is in the closed interval `[0,theta]`
 
 ---
 
