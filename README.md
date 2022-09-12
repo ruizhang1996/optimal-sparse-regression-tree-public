@@ -5,14 +5,48 @@ Implementation of [Optimal Sparse Regression Tree](https://arxiv.org/pdf/). This
 
 
 # Table of Content
+- [Quick Start](#quick-start)
 - [Usage](#usage)
-- [Development](#development)
 - [Configuration](#configuration)
+- [Development](#development)
 - [Dependencies](#dependencies)
 - [License](#license)
 - [FAQs](#faqs)
 
 ---
+
+# Quick Start
+
+### Build and Installation
+```
+./autobuild --install-python
+```
+_If you have multiple Python installations, please make sure to build and install using the same Python installation as the one intended for interacting with this library._
+
+
+### Fitting the Data
+
+```python
+import gosdt
+
+with open ("data.csv", "r") as data_file:
+    data = data_file.read()
+
+with open ("config.json", "r") as config_file:
+    config = config_file.read()
+
+
+print("Config:", config)
+print("Data:", data)
+
+gosdt.configure(config)
+result = gosdt.fit(data)
+
+print("Result: ", result)
+print("Time (seconds): ", gosdt.time())
+print("Iterations: ", gosdt.iterations())
+print("Graph Size: ", gosdt.size())
+```
 
 # Usage
 
@@ -100,59 +134,6 @@ print(model.tree)
 ```
 
 ---
-
-# Development
-
-
-Guide for developers who want to use, modify and test the library.
-
-Describes how to install and use the library with details on project structure.
-
-## Repository Structure
- - **notebooks** - interactive notebooks for examples and visualizations
- - **experiments** - configurations, datasets, and models to run experiments
- - **doc** - documentation
- - **python** - code relating to the Python implementation and wrappers around C++ implementation
- - **auto** - automations for checking and installing project dependencies
- - **dist** - compiled binaries for distribution
- - **build** - compiled binary objects and other build artifacts
- - **lib** - headers for external libraries
- - **log** - log files
- - **src** - source files
- - **test** - test files
-
-## Installing Dependencies
-Refer to [**Dependency Installation**](/doc/dependencies.md##Installation)
-
-## Build Process
- - **Check Updates to the Dependency Tests or Makefile** 
-   ```
-   ./autobuild --regenerate
-   ```
- - **Check for Missing Dependencies** 
-   ```
-   ./autobuild --configure --enable-tests
-   ```
- - **Build and Run Test Suite**
-   ```
-   ./autobuild --test
-   ```
- - **Build and Install Program**
-   ```
-   ./autobuild --install --enable-tests
-   ```
- - **Run the Program** 
-   ```
-   gosdt dataset.csv config.json
-   ```
- - **Build and Install the Python Extension**
-   ```
-   ./autobuild --install-python
-   ```
- For a full list of build options, run `./autobuild --help`
-
----
-
 # Configuration
 
 Details on the configuration options.
@@ -171,13 +152,6 @@ There is a default configuration which will be used if no such file is specified
 The configuration file is a JSON object and has the following structure and default values:
 ```json
 {
-  "balance": false,
-  "cancellation": true,
-  "look_ahead": true,
-  "similar_support": false,
-  "feature_exchange": false,
-  "continuous_feature_exchange": false,
-  "rule_list": false,
   "k_cluster": true,
 
   "diagnostics": false,
@@ -210,30 +184,6 @@ The configuration file is a JSON object and has the following structure and defa
 
 ### Flags
 
-**balance**
- - Values: true or false
- - Description: Enables overriding the sample importance by equalizing the importance of each present class
-
-**cancellation**
- - Values: true or false
- - Description: Enables propagate up the dependency graph of task cancellations
-
-**look_ahead**
- - Values: true or false
- - Description: Enables the one-step look-ahead bound implemented via scopes
-
-**similar_support**
- - Values: true or false
- - Description: Enables the similar support bound imeplemented via the distance index
-
-**feature_exchange**
- - Values: true or false
- - Description: Enables pruning of pairs of features using subset comparison
-
-**continuous_feature_exchange**
- - Values: true or false
- - Description: Enables pruning of pairs continuous of feature thresholds using subset comparison
-
 **k_cluster**
  - Values: true or false
  - Description: Enables usage of the k-Means Equivalent Points Bound
@@ -254,11 +204,16 @@ The configuration file is a JSON object and has the following structure and defa
    ```
    ComplexityPenalty = # Leaves x regularization
    ```
+   
+ **depth_budget**
+ - Values: Integer 
+ - Description: The maximum tree depth for solutions, counting a tree with just the root node as depth 1. 0 means unlimited.
 
  **uncertainty_tolerance**
  - Values: Decimal within range [0,1]
  - Description: Used to allow early termination of the algorithm. Any models produced as a result are guaranteed to score within the lowerbound and upperbound at the time of termination. However, the algorithm does not guarantee that the optimal model is within the produced model unless the uncertainty value has reached 0.
 
+ **upperbound**
  - Values: Decimal within range [0,1]
  - Description: Used to limit the risk of model search space. This can be used to ensure that no models are produced if even the optimal model exceeds a desired maximum risk. This also accelerates learning if the upperbound is taken from the risk of a nearly optimal model.
 
@@ -355,6 +310,58 @@ OSRT currently supports weighted L1 and L2 losses.
  - Description: specify the weight for the given loss
  - Special Case: When set to empty array, all data points are weighted equally.
 
+
+---
+
+# Development
+
+
+Guide for developers who want to use, modify and test the library.
+
+Describes how to install and use the library with details on project structure.
+
+## Repository Structure
+ - **notebooks** - interactive notebooks for examples and visualizations
+ - **experiments** - configurations, datasets, and models to run experiments
+ - **doc** - documentation
+ - **python** - code relating to the Python implementation and wrappers around C++ implementation
+ - **auto** - automations for checking and installing project dependencies
+ - **dist** - compiled binaries for distribution
+ - **build** - compiled binary objects and other build artifacts
+ - **lib** - headers for external libraries
+ - **log** - log files
+ - **src** - source files
+ - **test** - test files
+
+## Installing Dependencies
+Refer to [**Dependency Installation**](/doc/dependencies.md##Installation)
+
+## Build Process
+ - **Check Updates to the Dependency Tests or Makefile** 
+   ```
+   ./autobuild --regenerate
+   ```
+ - **Check for Missing Dependencies** 
+   ```
+   ./autobuild --configure --enable-tests
+   ```
+ - **Build and Run Test Suite**
+   ```
+   ./autobuild --test
+   ```
+ - **Build and Install Program**
+   ```
+   ./autobuild --install --enable-tests
+   ```
+ - **Run the Program** 
+   ```
+   gosdt dataset.csv config.json
+   ```
+ - **Build and Install the Python Extension**
+   ```
+   ./autobuild --install-python
+   ```
+ For a full list of build options, run `./autobuild --help`
 
 ---
 
