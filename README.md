@@ -169,7 +169,6 @@ The configuration file is a JSON object and has the following structure and defa
   "time_limit": 0,
   "worker_limit": 1,
 
-  "costs": "",
   "model": "",
   "profile": "",
   "timing": "",
@@ -250,27 +249,6 @@ The configuration file is a JSON object and has the following structure and defa
  - Special Cases: When set to 0, a single thread is created for each core detected on the machine.
 
 ### Files
-
-**costs**
- - Values: string representing a path to a file.
- - Description: This file must contain a CSV representing the cost matrix for calculating loss.
-   - The first row is a header listing every class that is present in the training data
-   - Each subsequent row contains the cost incurred of predicitng class **i** when the true class is **j**, where **i** is the row index and **j** is the column index
-   - Example where each false negative costs 0.1 and each false positive costs 0.2 (and correct predictions costs 0.0):
-     ```
-     negative,positive
-     0.0,0.1
-     0.2,0.0
-     ```
-   - Example for multi-class objectives:
-     ```
-     class-A,class-B,class-C
-     0.0,0.1,0.3
-     0.2,0.0,0.1
-     0.8,0.3,0.0
-     ```
-   - Note: costs values are not normalized, so high cost values lower the relative weight of regularization
- - Special Case: When set to empty string, a default cost matrix is used which represents unweighted training misclassification.
 
 **model**
  - Values: string representing a path to a file.
@@ -396,6 +374,7 @@ The following dependencies are included as part of the repository, thus requirin
 ---
 
 # FAQs
+_Note we will work on this and following sections later_
 
 If you run into any issues, consult the [**FAQs**](/doc/faqs.md) first. 
 
