@@ -1,5 +1,5 @@
 # OSRT Documentation
-Implementation of [Optimal Sparse Regression Tree](https://arxiv.org/pdf/). This is implemented in [Generalized Optimal Sparse Decision Tree framework](https://github.com/ubc-systopia/gosdt-guesses).
+Implementation of [Optimal Sparse Regression Tree](https://arxiv.org/pdf/). This is implemented based on [Generalized Optimal Sparse Decision Tree framework](https://github.com/ubc-systopia/gosdt-guesses).
 
 ![image](https://user-images.githubusercontent.com/60573138/189567116-0b719588-d670-4038-a242-2cc4be26816b.png)
 
@@ -71,8 +71,8 @@ gosdt dataset.csv config.json
 cat dataset.csv | gosdt config.json >> output.json
 ```
 
-For examples of dataset files, refer to `experiments/datasets/compas/binned.csv`.
-For an example configuration file, refer to `experiments/configurations/compas.json`.
+For examples of dataset files, refer to `experiments/datasets/airfoil/airfoil.csv`.
+For an example configuration file, refer to `experiments/configurations/config.json`.
 For documentation on the configuration file, refer to [**Dependency Installation**](/doc/configuration.md)
 
 ## As a Python Library with C++ Extensions
@@ -112,7 +112,7 @@ import pandas as pd
 import numpy as np
 from model.gosdt import GOSDT
 
-dataframe = pd.DataFrame(pd.read_csv("experiments/datasets/monk_2/data.csv"))
+dataframe = pd.DataFrame(pd.read_csv("experiments/datasets/airfoil/airfoil.csv"))
 
 X = dataframe[dataframe.columns[:-1]]
 y = dataframe[dataframe.columns[-1:]]
@@ -388,4 +388,4 @@ Licensing information
 
 **Inquiries**
 
-For general inquiries, send an email to `jimmy.projects.lin@gmail.com`
+For general inquiries, send an email to `r.zhang@duke.edu`
