@@ -68,8 +68,8 @@ void Dataset::construct_bitmasks(std::istream & data_source) {
 
     for (unsigned int i = 0; i < number_of_samples; ++i) {
         for (unsigned int j = 0; j < number_of_binary_features; ++j) {
-            this -> features[j].set(i, bool(rows[i][j]));
-            this -> feature_rows[i].set(j, bool(rows[i][j]));
+            this -> features[j].set(i, bool(this->rows[i][j]));
+            this -> feature_rows[i].set(j, bool(this->rows[i][j]));
         }
     }
     //TODO: check depth for regression
