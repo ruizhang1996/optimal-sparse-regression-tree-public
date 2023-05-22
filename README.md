@@ -1,5 +1,5 @@
 # OSRT Documentation
-Implementation of [Optimal Sparse Regression Tree (OSRT)](https://arxiv.org/pdf/). This is implemented based on [Generalized Optimal Sparse Decision Tree framework (GOSDT)](https://github.com/ubc-systopia/gosdt-guesses). If you need classification trees, please use GOSDT.
+Implementation of [Optimal Sparse Regression Tree (OSRT)](https://arxiv.org/abs/2211.14980). This is implemented based on [Generalized Optimal Sparse Decision Tree framework (GOSDT)](https://github.com/ubc-systopia/gosdt-guesses). If you need classification trees, please use GOSDT.
 
 ![image](https://user-images.githubusercontent.com/60573138/189567116-0b719588-d670-4038-a242-2cc4be26816b.png)
 
