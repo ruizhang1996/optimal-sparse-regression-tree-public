@@ -36,7 +36,7 @@
 #include <cassert>
 #include <stack>
 
-#include "Ckmeans.1d.dp.h"
+#include "../../../include/ckmeans/Ckmeans.1d.dp.h"
 
 void reduce_in_place(int imin, int imax, int istep, int q,
                      const std::vector<size_t> & js,

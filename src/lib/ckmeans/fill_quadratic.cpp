@@ -27,7 +27,7 @@
 #include <stack>
 #include <cmath>
 
-#include "Ckmeans.1d.dp.h"
+#include "../../../include/ckmeans/Ckmeans.1d.dp.h"
 
 void fill_row_q(int imin, int imax, int q,
                 std::vector< std::vector<ldouble> > & S,

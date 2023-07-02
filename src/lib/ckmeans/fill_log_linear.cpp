@@ -24,7 +24,7 @@
 
 #include <vector>
 #include <iostream>
-#include "Ckmeans.1d.dp.h"
+#include "../../../include/ckmeans/Ckmeans.1d.dp.h"
 
 void fill_row_q_log_linear(int imin, int imax, int q,
                            int jmin, int jmax,

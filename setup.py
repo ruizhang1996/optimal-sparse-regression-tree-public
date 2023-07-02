@@ -1,52 +1,44 @@
-from distutils.core import setup, Extension
-import glob
-import sys
-import os
 import platform
+import os
+import pathlib
+import distro
 
-# This script is used to build and/or install the trainer into as Python extension.
-# To build the extention, run: python python/extension/setup.py build
-# To install the extention (after build), run: python python/extension/setup.py install
+from setuptools import find_packages
+from skbuild import setup
 
-# Please only build and install the extension using the same installation of Python
-# as the one intended for interacting with the library
+cmake_args = []
 
-# Force distutil to use the g++ compiler
-os.environ["CC"] = "g++"
-os.environ["CXX"] = "g++"
+if platform.system() == "Windows" or (platform.system() == "Linux" and distro.id() == "centos"):
+    assert "VCPKG_INSTALLATION_ROOT" in os.environ, \
+        "The environment variable \"VCPKG_INSTALLATION_ROOT\" must be set before running this script."
+    toolchain_path = pathlib.Path(os.getenv("VCPKG_INSTALLATION_ROOT")) / "scripts/buildsystems/vcpkg.cmake"
+    cmake_args.append("-DCMAKE_TOOLCHAIN_FILE={}".format(toolchain_path))
 
-# Standard Build Configuration
-OPTIMIZATION = ['-O3']
-STD = ['-std=c++11']
-INCLUDES = ['-I', 'include']
-
-# Platform Specific Build Configuration
-if platform.system() == "Darwin":
-    STDLIB = ['-stdlib=libc++']
-    TBB_LIBS = ['-ltbb', '-ltbbmalloc']
-    CL_LIBS = ['-framework', 'OpenCL']
-    GMP_LIBS = ['-lgmp']
-elif platform.system() == "Linux":
-    STDLIB = []
-    TBB_LIBS = ['-ltbb', '-ltbbmalloc']
-    CL_LIBS = ['-lOpenCL']
-    GMP_LIBS = ['-lgmp']
-
-COMPILE_ARGS = OPTIMIZATION + STD + INCLUDES + STDLIB
-LINK_ARGS = OPTIMIZATION + STD + INCLUDES + STDLIB + TBB_LIBS + CL_LIBS + GMP_LIBS
-
-module = Extension(
-    name='gosdt',
-    # sources=['src/python_extension.cpp'],
-    sources=[obj for obj in glob.glob('src/*.cpp')],
-    language='c++',
-    extra_compile_args=COMPILE_ARGS,
-    extra_link_args=LINK_ARGS,
-    extra_objects=[obj for obj in glob.glob('src/*.o')]
-)
+print("Additional CMake Arguments = {}".format(cmake_args))
 
 setup(
-    name='gosdt',
-    version='0.1.1',
-    ext_modules=[module]
+    name="treefarms",
+    version="0.1.0",
+    description="Implementation of Trees FAst RashoMon Sets",
+    author="UBC Systopia Research Lab",
+    url="https://github.com/ubc-systopia/treeFarms",
+    license="BSD 3-Clause",
+    packages=find_packages(where='.'),
+    cmake_install_dir="treefarms",
+    cmake_args=cmake_args,
+    python_requires=">=3.7",
+    long_description=pathlib.Path("README_PyPI.md").read_text(encoding="utf-8"),
+    long_description_content_type="text/markdown",
+    install_requires=["setuptools",
+                      "wheel",
+                      "attrs",
+                      "packaging>=20.9",
+                      "editables==0.2;python_version>'3.0'",
+                      "pandas",
+                      "sklearn",
+                      "sortedcontainers",
+                      "gmpy2",
+                      "matplotlib",
+                      "tqdm",
+                      "timbertrek"]
 )

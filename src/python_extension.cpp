@@ -38,7 +38,7 @@ static PyObject * size(PyObject * self, PyObject * args) { return Py_BuildValue(
 static PyObject * status(PyObject * self, PyObject * args) { return Py_BuildValue("i", GOSDT::status); }
 
 // Define the list of methods for a module
-static PyMethodDef gosdt_methods[] = {
+static PyMethodDef libosrt_methods[] = {
     // { method name, method pointer, method parameter format, method description }
     {"configure", configure, METH_VARARGS, "Configures the algorithm using an input JSON string"},
     {"fit", fit, METH_VARARGS, "Trains the model using an input CSV string"},
@@ -50,15 +50,15 @@ static PyMethodDef gosdt_methods[] = {
 };
 
 // Define the module
-static struct PyModuleDef gosdt = {
+static struct PyModuleDef libosrt = {
     PyModuleDef_HEAD_INIT,
-    "gosdt", // Module Name
-    "Generalized Optimal Sparse Decision Tree", // Module Description
+    "libosrt", // Module Name
+    "Optimal Sparse Regression Trees", // Module Description
     -1, // Size of per-interpreter state
-    gosdt_methods // Module methods
+    libosrt_methods // Module methods
 };
 
 // Initialize the module
-PyMODINIT_FUNC PyInit_gosdt(void) {
-    return PyModule_Create(&gosdt);
+PyMODINIT_FUNC PyInit_libosrt(void) {
+    return PyModule_Create(&libosrt);
 }

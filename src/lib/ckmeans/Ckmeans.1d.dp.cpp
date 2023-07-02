@@ -96,7 +96,7 @@
 
  */
 
-#include "Ckmeans.1d.dp.h"
+#include "../../../include/ckmeans/Ckmeans.1d.dp.h"
 // #include "EWL2.h"
 
 #include <algorithm>

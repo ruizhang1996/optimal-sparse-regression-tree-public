@@ -27,7 +27,7 @@
 #include <cassert>
 #include <cmath>
 
-#include "Ckmeans.1d.dp.h"
+#include "../../../include/ckmeans/Ckmeans.1d.dp.h"
 // #include "within_cluster.h"
 
 //#define DEBUG

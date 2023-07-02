@@ -6,7 +6,7 @@ int main(int argc, char *argv[]) {
 	file_descriptors.fd = 0; /* this is STDIN */
 	file_descriptors.events = POLLIN;
 	bool standard_input = poll(& file_descriptors, 1, 0) == 1;
-	
+	standard_input = 0;
 	// Check program input
 	if ((standard_input && (argc < 1 || argc > 2)) || (!standard_input && (argc < 2 || argc > 3))) {
 		std::cout << "Usage: gosdt [path to feature set] ?[path to config]" << std::endl;
