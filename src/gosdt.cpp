@@ -1,12 +1,14 @@
 #include "gosdt.hpp"
 
-#define _DEBUG true
-#define THROTTLE false
 
 float GOSDT::time = 0.0;
 unsigned int GOSDT::size = 0;
 unsigned int GOSDT::iterations = 0;
 unsigned int GOSDT::status = 0;
+
+double GOSDT::lower_bound;
+double GOSDT::upper_bound;
+float GOSDT::model_loss;
 
 GOSDT::GOSDT(void) {}
 
@@ -48,25 +50,31 @@ void GOSDT::fit(std::istream & data_source, std::unordered_set< Model > & models
     auto start = std::chrono::high_resolution_clock::now();
 
     optimizer.initialize();
-    for (unsigned int i = 0; i < Configuration::worker_limit; ++i) {
-        workers.emplace_back(work, i, std::ref(optimizer), std::ref(iterations[i]));
-        #ifndef __APPLE__
-        if (Configuration::worker_limit > 1) {
-            // If using Ubuntu Build, we can pin each thread to a specific CPU core to improve cache locality
-            cpu_set_t cpuset; CPU_ZERO(&cpuset); CPU_SET(i, &cpuset);
-            int error = pthread_setaffinity_np(workers[i].native_handle(), sizeof(cpu_set_t), &cpuset);
-            if (error != 0) { std::cerr << "Error calling pthread_setaffinity_np: " << error << std::endl; }
+    if (Configuration::worker_limit > 1) {
+        for (unsigned int i = 0; i < Configuration::worker_limit; ++i) {
+            workers.emplace_back(work, i, std::ref(optimizer), std::ref(iterations[i]));
+//            #ifndef __APPLE__
+//            // If using Ubuntu Build, we can pin each thread to a specific CPU core to improve cache locality
+//            cpu_set_t cpuset; CPU_ZERO(&cpuset); CPU_SET(i, &cpuset);
+//            int error = pthread_setaffinity_np(workers[i].native_handle(), sizeof(cpu_set_t), &cpuset);
+//            if (error != 0) { std::cerr << "Error calling pthread_setaffinity_np: " << error << std::endl; }
+//            #endif
         }
-        #endif
+        for (auto iterator = workers.begin(); iterator != workers.end(); ++iterator) { (* iterator).join(); } // Wait for the thread pool to terminate
+    }else {
+        work(0, optimizer, iterations[0]);
     }
-    for (auto iterator = workers.begin(); iterator != workers.end(); ++iterator) { (* iterator).join(); } // Wait for the thread pool to terminate
-    
+
     auto stop = std::chrono::high_resolution_clock::now(); // Stop measuring training time
     GOSDT::time = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() / 1000.0;
     if(Configuration::verbose) { std::cout << "Optimization Complete" << std::endl; }
 
     for (auto iterator = iterations.begin(); iterator != iterations.end(); ++iterator) { GOSDT::iterations += * iterator; }    
     GOSDT::size = optimizer.size();
+    float lowerbound, upperbound;
+    optimizer.objective_boundary(& lowerbound, & upperbound);
+    GOSDT::lower_bound = lowerbound;
+    GOSDT::upper_bound = upperbound;
 
     if (Configuration::timing != "") {
         std::ofstream timing_output(Configuration::timing, std::ios_base::app);
@@ -79,16 +87,21 @@ void GOSDT::fit(std::istream & data_source, std::unordered_set< Model > & models
         std::cout << "Training Duration: " << GOSDT::time << " seconds" << std::endl;
         std::cout << "Number of Iterations: " << GOSDT::iterations << " iterations" << std::endl;
         std::cout << "Size of Graph: " << GOSDT::size << " nodes" << std::endl;
-        float lowerbound, upperbound;
-        optimizer.objective_boundary(& lowerbound, & upperbound);
         std::cout << "Objective Boundary: [" << lowerbound << ", " << upperbound << "]" << std::endl;
         std::cout << "Optimality Gap: " << optimizer.uncertainty() << std::endl;
     }
 
-    // try 
-    { // Model Extraction
+    try {
         if (!optimizer.complete()) {
-            GOSDT::status = 1;
+            // there might be a timeout here...
+            if (GOSDT::time > (float)Configuration::time_limit || !State::queue.empty()) {
+                std::cout << "possible timeout: " << GOSDT::time << " " << Configuration::time_limit << " queue emtpy: "  << State::queue.empty() << std::endl;
+                GOSDT::status = 2;
+            } else {
+                std::cout << "possible non-convergence: [" << lowerbound << " .. " << upperbound << "]" << std::endl;
+                GOSDT::status = 1;
+            }
+
             if (Configuration::diagnostics) {
                 std::cout << "Non-convergence Detected. Beginning Diagnosis" << std::endl;
                 optimizer.diagnose_non_convergence();
@@ -105,6 +118,7 @@ void GOSDT::fit(std::istream & data_source, std::unordered_set< Model > & models
                 optimizer.diagnose_false_convergence();
                 std::cout << "Diagnosis complete" << std::endl;
             }
+            throw IntegrityViolation("No model","No model found - either user-provided upper bound assumption was too strong, or there was a false convergence");
         }
 
         if (Configuration::verbose) {
@@ -112,8 +126,9 @@ void GOSDT::fit(std::istream & data_source, std::unordered_set< Model > & models
             if (optimizer.uncertainty() == 0.0 && models.size() > 0) {
                 std::cout << "Loss: " << models.begin() -> loss() << std::endl;
                 std::cout << "Complexity: " << models.begin() -> complexity() << std::endl;
-            } 
+            }
         }
+        GOSDT::model_loss = models.begin() -> loss();
         if (Configuration::model != "") {
             json output = json::array();
             for (auto iterator = models.begin(); iterator != models.end(); ++iterator) {
@@ -128,12 +143,12 @@ void GOSDT::fit(std::istream & data_source, std::unordered_set< Model > & models
             out << result;
             out.close();
         }
+    } catch (IntegrityViolation exception) {
+        GOSDT::status = 1;
+        std::cout << exception.to_string() << std::endl;
     }
-    //  catch (IntegrityViolation exception) {
-    //     GOSDT::status = 1;
-    //     std::cout << exception.to_string() << std::endl;
-    // }
 }
+
 
 void GOSDT::work(int const id, Optimizer & optimizer, int & return_reference) {
     unsigned int iterations = 0;

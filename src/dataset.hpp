@@ -1,9 +1,6 @@
 #ifndef DATASET_H
 #define DATASET_H
 
-#define CL_SILENCE_DEPRECATION
-#define __CL_ENABLE_EXCEPTIONS
-
 #include <iostream>
 #include <sstream>
 #include <math.h>
@@ -19,10 +16,6 @@
 // #include <ckmeans/dynamic_prog.cpp>
 #include <ckmeans/Ckmeans.1d.dp.h>
 
-#ifdef INCLUDE_OPENCL
-#include <opencl/cl.hpp>
-#endif
-
 #include <json/json.hpp>
 #include <csv/csv.h>
 
@@ -32,7 +25,7 @@ class Dataset;
 #include "configuration.hpp"
 #include "encoder.hpp"
 #include "index.hpp"
-#include "state.hpp"
+//#include "state.hpp" // FIREWOLF: Circular References: Moved to cpp.
 #include "tile.hpp"
 
 using json = nlohmann::json;

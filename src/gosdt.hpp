@@ -6,20 +6,23 @@
 #include <iostream>
 
 #include <thread>
-#include <pthread.h>
-#include <sched.h>
-#include <unistd.h>
+//#include <pthread.h>
+//#include <sched.h>
+//#include <unistd.h>
 #include <chrono>
 
-#include <boost/dynamic_bitset.hpp>
+//#include <boost/dynamic_bitset.hpp>
 #include <vector>
 #include <string>
 
-#include <alloca.h>
+//#include <alloca.h>
 
 #include <json/json.hpp>
 
+#include "encoder.hpp"
+#include "dataset.hpp"
 #include "integrity_violation.hpp"
+#include "model.hpp"
 #include "optimizer.hpp"
 
 using json = nlohmann::json;
@@ -35,6 +38,10 @@ class GOSDT {
         static unsigned int size;
         static unsigned int iterations;
         static unsigned int status;
+        static double lower_bound;
+        static double upper_bound;
+        static float model_loss; //loss of tree(s) returned
+
 
         // @param config_source: string stream containing a JSON object of configuration parameters
         // @note: See the Configuration class for details about each parameter
