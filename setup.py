@@ -17,14 +17,14 @@ if platform.system() == "Windows" or (platform.system() == "Linux" and distro.id
 print("Additional CMake Arguments = {}".format(cmake_args))
 
 setup(
-    name="treefarms",
+    name="osrt",
     version="0.1.0",
-    description="Implementation of Trees FAst RashoMon Sets",
+    description="Implementation of Optimal Sparse Regression Trees",
     author="UBC Systopia Research Lab",
-    url="https://github.com/ubc-systopia/treeFarms",
+    url="https://github.com/ruizhang1996/optimal-sparse-regression-tree-public",
     license="BSD 3-Clause",
     packages=find_packages(where='.'),
-    cmake_install_dir="treefarms",
+    cmake_install_dir="osrt",
     cmake_args=cmake_args,
     python_requires=">=3.7",
     long_description=pathlib.Path("README_PyPI.md").read_text(encoding="utf-8"),
@@ -38,7 +38,6 @@ setup(
                       "sklearn",
                       "sortedcontainers",
                       "gmpy2",
-                      "matplotlib",
-                      "tqdm",
-                      "timbertrek"]
+                      "matplotlib"
+                    ]
 )
