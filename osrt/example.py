@@ -7,41 +7,26 @@ from model.threshold_guess import compute_thresholds
 from model.osrt import OSRT
 
 # read the dataset
+# preprocess your data otherwise OSRT will binarize continuous feature using all threshold values.
 df = pd.read_csv("experiments/datasets/airfoil/airfoil.csv")
 X, y = df.iloc[:,:-1].values, df.iloc[:,-1].values
 h = df.columns[:-1]
-
-# GBDT parameters for threshold and lower bound guesses
-n_est = 40
-max_depth = 1
-
-# guess thresholds
 X = pd.DataFrame(X, columns=h)
+X_train = X
+y_train = pd.DataFrame(y)
 print("X:", X.shape)
 print("y:",y.shape)
+
+
+# guess thresholds (OPTIONAL) uncomment following lines if you want to speed up optimization
+# NOTE: You should also evaluate accuracy on guessed data if you choose to guess thresholds
+# GBRT parameters for threshold guesses
+# n_est = 40
+# max_depth = 1
 # X_train, thresholds, header, threshold_guess_time = compute_thresholds(X, y, n_est, max_depth)
-y_train = pd.DataFrame(y)
-
-# guess lower bound
-# start_time = time.perf_counter()
-# clf = GradientBoostingRegressor(n_estimators=n_est, max_depth=max_depth, random_state=42)
-# clf.fit(X_train, y_train.values.flatten())
-# warm_labels = clf.predict(X_train)
-
-# elapsed_time = time.perf_counter() - start_time
-#
-# lb_time = elapsed_time
-
-# save the labels as a tmp file and return the path to it.
-# labelsdir = pathlib.Path('/tmp/warm_lb_labels')
-# labelsdir.mkdir(exist_ok=True, parents=True)
-
-# labelpath = labelsdir / 'warm_label.tmp'
-# labelpath = str(labelpath)
-# pd.DataFrame(warm_labels, columns=["class_labels"]).to_csv(labelpath, header="class_labels",index=None)
 
 
-# train GOSDT model
+# train OSRT model
 config = {
     "similar_support": False,
     "feature_exchange": False,
@@ -51,26 +36,26 @@ config = {
     "model_limit": 1,
     "time_limit": 0,
     "similar_support": False,
-    "metric": "L1",
+    "metric": "L2",
     "weights": [],
-    "verbose": True,
+    "verbose": False,
     "diagnostics": True,
         }
 
 model = OSRT(config)
 
-model.fit(X, y_train)
+model.fit(X_train, y_train)
 
 print("evaluate the model, extracting tree and scores", flush=True)
 
 # get the results
-train_acc = model.score(X, y_train)
+train_acc = model.score(X_train, y_train)
 n_leaves = model.leaves()
 n_nodes = model.nodes()
 time = model.time
 
-# print("Model training time: {}".format(time))
-print("Training accuracy: {}".format(train_acc))
+print("Model training time: {}".format(time))
+print("Training score: {}".format(train_acc))
 print("# of leaves: {}".format(n_leaves))
 print(model.tree)
 
