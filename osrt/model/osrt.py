@@ -4,8 +4,8 @@ import time
 from numpy import array
 
 import osrt.libosrt as osrt  # Import the GOSDT extension
-from osrt.model.encoder import Encoder
-from osrt.model.imbalance.osdt_imb_v9 import bbound, predict  # Import the special objective implementation
+# from osrt.model.encoder import Encoder
+# from osrt.model.imbalance.osdt_imb_v9 import bbound, predict  # Import the special objective implementation
 from osrt.model.tree_regressor import TreeRegressor  # Import the tree classification model
 
 
@@ -61,10 +61,10 @@ class OSRT:
         self.time = osrt.time()  # Record the training time
 
         if osrt.status() == 0:
-            print("gosdt reported successful execution")
+            print("osrt reported successful execution")
             self.timeout = False
         elif osrt.status() == 2:
-            print("gosdt reported possible timeout.")
+            print("osrt reported possible timeout.")
             self.timeout = True
             self.time = -1
             # self.stime = -1
@@ -73,7 +73,7 @@ class OSRT:
             print('----------------------------------------------')
             print(result)
             print('----------------------------------------------')
-            raise Exception("Error: GOSDT encountered an error while training")
+            raise Exception("Error: OSRT encountered an error while training")
 
         result = json.loads(result)  # Deserialize resu
 

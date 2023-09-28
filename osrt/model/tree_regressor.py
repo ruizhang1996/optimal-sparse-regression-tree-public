@@ -27,7 +27,7 @@ class TreeRegressor:
     Additional support for encoding/decoding layer can be layers if the feature-space of the model differs from the feature space of the original data
     """
 
-    def __init__(self, source, encoder=None, X=None, y=None, metric=None, weights=None):
+    def __init__(self, source, encoder=None, X=None, y=None, metric="L2", weights=None):
         self.source = source  # The classifier stored in a recursive dictionary structure
         self.encoder = encoder  # Optional encoder / decoder unit to run before / after prediction
         if X is not None and y is not None:  # Original training features and labels to fill in missing training loss values
@@ -280,7 +280,7 @@ class TreeRegressor:
         """
         Returns
         ---
-        string : pseuodocode representing the logic of this classifier
+        string : pseuodocode representing the logic of this regressor
         """
         cases = []
         for group in self.__groups__():
@@ -313,7 +313,7 @@ class TreeRegressor:
             outcomes = []
             # for outcome, probability in group["distribution"].items():
             outcomes.append("    predicted {}: {}".format(group["name"], group["prediction"]))
-            outcomes.append("    misclassification penalty: {}".format(round(group["loss"], 3)))
+            outcomes.append("    error penalty: {}".format(round(group["loss"], 3)))
             outcomes.append("    complexity penalty: {}".format(round(group["complexity"], 3)))
             result = "\n".join(outcomes)
             cases.append("{}\n{}".format(condition, result))
