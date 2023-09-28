@@ -20,15 +20,15 @@ class NumpyEncoder(JSONEncoder):
 
 class TreeRegressor:
     """
-    Unified representation of a tree classifier in Python
+    Unified representation of a tree regressor in Python
 
-    This class accepts a dictionary representation of a tree classifier and decodes it into an interactive object
+    This class accepts a dictionary representation of a tree regressor and decodes it into an interactive object
 
     Additional support for encoding/decoding layer can be layers if the feature-space of the model differs from the feature space of the original data
     """
 
     def __init__(self, source, encoder=None, X=None, y=None, metric="L2", weights=None):
-        self.source = source  # The classifier stored in a recursive dictionary structure
+        self.source = source  # The regressor stored in a recursive dictionary structure
         self.encoder = encoder  # Optional encoder / decoder unit to run before / after prediction
         if X is not None and y is not None:  # Original training features and labels to fill in missing training loss values
             self.__initialize_training_loss__(X, y, metric, weights)
@@ -178,7 +178,7 @@ class TreeRegressor:
         metric : string
             specify metric used to evaluate
         weight : real number
-            an n-by-1 column of weights to apply to each sample's misclassification
+            an n-by-1 column of weights to apply to each sample
 
         Returns
         ---
@@ -313,7 +313,7 @@ class TreeRegressor:
             outcomes = []
             # for outcome, probability in group["distribution"].items():
             outcomes.append("    predicted {}: {}".format(group["name"], group["prediction"]))
-            outcomes.append("    error penalty: {}".format(round(group["loss"], 3)))
+            outcomes.append("    normalized loss penalty: {}".format(round(group["loss"], 3)))
             outcomes.append("    complexity penalty: {}".format(round(group["complexity"], 3)))
             result = "\n".join(outcomes)
             cases.append("{}\n{}".format(condition, result))

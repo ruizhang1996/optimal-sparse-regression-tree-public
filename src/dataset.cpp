@@ -49,7 +49,7 @@ void Dataset::construct_bitmasks(std::istream & data_source) {
     auto compi = [targets](size_t i, size_t j) {
         return targets[i] < targets[j];
     };
-    if (Configuration::metric == Configuration::l1_loss && Configuration::k_cluster){
+    if (Configuration::metric == Configuration::l1_loss){
         std::vector<int> target_order(number_of_samples);
         std::iota(target_order.begin(), target_order.end(), 0);
         std::sort(target_order.begin(), target_order.end(), compi);
@@ -107,7 +107,7 @@ void Dataset::construct_clusters(void) {
         std::vector< double > cluster_values;
         double sum_weights;
         for (int idx : cluster) {
-            cluster_values.emplace_back(weights[idx] * targets[idx]);
+            cluster_values.emplace_back(weights[idx] * targets[idx]); // TODO: could save one vector here
             clustered_targets_mapping[idx] = cluster_idx;
         }
         cluster_loss.emplace_back(compute_loss(cluster, sum_weights));
@@ -167,13 +167,29 @@ void Dataset::construct_ordering(void) {
 
 void Dataset::target_value(Bitmask capture_set, std::string & prediction_value) const{
     int max = capture_set.size();
-    double sum = 0.0;
-    double wsum = 0.0;
-    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
-        sum += targets[i];
-        wsum += weights[i];
+    if (Configuration::metric == Configuration::l2_loss){
+        double sum = 0.0;
+        double wsum = 0.0;
+        for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+            sum += targets[i];
+            wsum += weights[i];
+        }
+        prediction_value = std::to_string(sum/wsum * this -> loss_normalizer);
+    } else {
+        double total_weights = 0;
+        for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+            total_weights += weights[i];
+        }
+        int m = capture_set.scan(0, true);
+        double wsum = weights[m];
+        while (wsum < 0.5 * total_weights){
+            m = capture_set.scan(m + 1, true);
+            wsum += weights[m];
+        }
+        prediction_value = std::to_string(targets[m] * this -> loss_normalizer);
+
     }
-    prediction_value = std::to_string(sum/wsum);
+
 }
 double Dataset::ssq_loss(Bitmask capture_set) const {
     double cumsum1 = 0;
@@ -211,17 +227,35 @@ double Dataset::sabs_loss(Bitmask capture_set) const {
         total_weights += weights[i];
     }
     // find median of cluster points
-    int m = capture_set.scan(0, true);
-    double wsum = weights[m];
-    while (wsum < 0.5 * total_weights){
-        m = capture_set.scan(m + 1, true);
-        wsum += weights[m];
-    }
+//    int m = capture_set.scan(0, true);
+//    double wsum = weights[m];
+//    while (wsum < 0.5 * total_weights){
+//        m = capture_set.scan(m + 1, true);
+//        wsum += weights[m];
+//    }
     double sum = 0;
     // sum of absolute value
+//    for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+//        sum += abs(targets[i] - targets[m]) * weights[i];
+//    }
+
+    double wsum1 = 0.0, wsum2 = 0.0, sum1 = 0.0, sum2 = 0.0;
+    double median;
+    bool found_median = false;
     for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
-        sum += abs((targets[i] - targets[m]) * weights[i]);
+        if (found_median){
+            wsum2 += weights[i];
+            sum2 += weights[i] * targets[i];
+        } else{
+            wsum1 += weights[i];
+            sum1 += weights[i] * targets[i];
+            if (wsum1 >= 0.5 * total_weights){
+                found_median = true;
+                median = targets[i];
+            }
+        }
     }
+    sum = median * (wsum1 - wsum2) - sum1 + sum2;
     return sum;
 }
 
@@ -233,17 +267,36 @@ double Dataset::sabs_loss(std::vector< int > capture_set_idx, double & sum_weigh
     }
     sum_weights = total_weights;
     // find median of cluster points
-    int m = 0;
-    double wsum = weights[capture_set_idx[m]];
-    while (wsum < 0.5 * total_weights){
-        m++;
-        wsum += weights[capture_set_idx[m]];
-    }
+//    int m = 0;
+//    double wsum = weights[capture_set_idx[m]];
+//    while (wsum < 0.5 * total_weights){
+//        m++;
+//        wsum += weights[capture_set_idx[m]];
+//    }
     double sum = 0;
     // sum of absolute value
+    double wsum1 = 0.0, wsum2 = 0.0, sum1 = 0.0, sum2 = 0.0;
+    double median;
+    bool found_median = false;
+
+//    for (int i : capture_set_idx) {
+//        sum += abs(targets[i] - targets[capture_set_idx[m]]) * weights[i]        ;
+//    }
+
     for (int i : capture_set_idx) {
-        sum += abs((targets[i] - targets[capture_set_idx[m]]) * weights[i]);
+        if (found_median){
+            wsum2 += weights[i];
+            sum2 += weights[i] * targets[i];
+        } else{
+            wsum1 += weights[i];
+            sum1 += weights[i] * targets[i];
+            if (wsum1 >= 0.5 * total_weights){
+                found_median = true;
+                median = targets[i];
+            }
+        }
     }
+    sum = median * (wsum1 - wsum2) - sum1 + sum2;
     return sum;
 }
 
@@ -298,6 +351,7 @@ void Dataset::normalize_data() {
             throw IntegrityViolation("Dataset::normalize_data", reason.str());
         }
     }
+    this -> loss_normalizer = loss_normalizer;
 
 
     for (int i = 0; i < size(); i++) {
@@ -429,7 +483,7 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     // }
     // assert(min_cost + Configuration::regularization < equivalent_point_loss_1 || equivalent_point_loss_1 < equivalent_point_loss);
     // equivalent_point_loss = 2 * Configuration::regularization + compute_equivalent_points_lower_bound(capture_set);
-    kmeans_accessor stored_kmeans_accessor;
+    kmeans_accessor stored_kmeans_accessor; // shared by kmeans lb and equiv points lb
     if (State::graph.kmeans.find(stored_kmeans_accessor, capture_set)) {
         equivalent_point_loss = stored_kmeans_accessor->second;
         stored_kmeans_accessor.release();

@@ -51,7 +51,7 @@ config = {
     "model_limit": 1,
     "time_limit": 0,
     "similar_support": False,
-    "metric": "L2",
+    "metric": "L1",
     "weights": [],
     "verbose": True,
     "diagnostics": True,
@@ -67,7 +67,7 @@ print("evaluate the model, extracting tree and scores", flush=True)
 train_acc = model.score(X, y_train)
 n_leaves = model.leaves()
 n_nodes = model.nodes()
-# time = model.utime
+time = model.time
 
 # print("Model training time: {}".format(time))
 print("Training accuracy: {}".format(train_acc))

@@ -116,7 +116,7 @@ private:
     std::vector< Bitmask > feature_rows; // Binary representation of rows
     // Bitmask majority; // Binary representation of columns
     std::vector<double> weights; // Float vector of size N, weights of sample
-    
+    double loss_normalizer;
     // Index index; // Index for calculating summaries
     // Index distance_index; // Index for calculating feature distances
 
