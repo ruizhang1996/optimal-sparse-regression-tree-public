@@ -5,11 +5,11 @@ Implementation of [Optimal Sparse Regression Tree (OSRT)](https://arxiv.org/abs/
 
 
 # Table of Content
-- [Quick Start](#quick-start)
-- [Usage](#usage)
+- [Installation](#installation)
+- [Compilation](#compilation)
 - [Configuration](#configuration)
-- [Development](#development)
-- [Dependencies](#dependencies)
+- [Example](#example)
+- [Repository Structure](#structure)
 - [License](#license)
 - [FAQs](#faqs)
 
