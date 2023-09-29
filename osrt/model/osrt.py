@@ -90,7 +90,7 @@ class OSRT:
         self.reported_loss = osrt.model_loss()  # Record reported training loss of returned tree
 
         print("training completed. {:.3f} seconds.".format(self.time))
-        print("bounds: [{:.6f}..{:.6f}] ({:.6f}) loss={:.6f}, iterations={}".format(self.lb, self.ub, self.ub - self.lb,
+        print("bounds: [{:.6f}..{:.6f}] ({:.6f}) normalized loss={:.6f}, iterations={}".format(self.lb, self.ub, self.ub - self.lb,
                                                                                     self.reported_loss,
                                                                                     self.iterations))
 

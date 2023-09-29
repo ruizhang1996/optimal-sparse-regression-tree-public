@@ -357,7 +357,7 @@ void Dataset::normalize_data() {
     for (int i = 0; i < size(); i++) {
         targets[i] = targets[i] / loss_normalizer;
     }
-    std::cout << "loss_normalizer: " << loss_normalizer << std::endl;
+    if (Configuration::verbose) {std::cout << "loss_normalizer: " << loss_normalizer << std::endl;}
 }
 
 // N := Number of datapoints in the original dataset

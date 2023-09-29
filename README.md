@@ -15,377 +15,419 @@ Implementation of [Optimal Sparse Regression Tree (OSRT)](https://arxiv.org/abs/
 
 ---
 
-# Quick Start
+# Installation
 
-### Build and Installation
-```
-./autobuild --install-python
-```
-_If you have multiple Python installations, please make sure to build and install using the same Python installation as the one intended for interacting with this library._
+You may use the following commands to install GOSDT along with its dependencies on macOS, Ubuntu and Windows.  
+You need **Python 3.7 or later** to use the module `gosdt` in your project.
 
-
-### Fitting the Data
-
-```python
-import gosdt
-
-with open ("data.csv", "r") as data_file:
-    data = data_file.read()
-
-with open ("config.json", "r") as config_file:
-    config = config_file.read()
-
-
-print("Config:", config)
-print("Data:", data)
-
-gosdt.configure(config)
-result = gosdt.fit(data)
-
-print("Result: ", result)
-print("Time (seconds): ", gosdt.time())
-print("Iterations: ", gosdt.iterations())
-print("Graph Size: ", gosdt.size())
-```
-
-# Usage
-
-Guide for end-users who want to use the library without modification.
-
-Describes how to install and use the library as a stand-alone command-line program or as an embedded extension in a larger project.
-Currently supported as a Python extension.
-
-## Installing Dependencies
-Refer to [**Dependency Installation**](/doc/dependencies.md##Installation)
-
-## As a Stand-Alone Command Line Program
-### Installation
-```
-./autobuild --install
-```
-
-### Executing the Program
 ```bash
-gosdt dataset.csv config.json
-# or 
-cat dataset.csv | gosdt config.json >> output.json
+pip3 install attrs packaging editables pandas sklearn sortedcontainers gmpy2 matplotlib
+pip3 install osrt
 ```
 
-For examples of dataset files, refer to `experiments/datasets/airfoil/airfoil.csv`.
-For an example configuration file, refer to `experiments/configurations/config.json`.
-For documentation on the configuration file, refer to [**Dependency Installation**](/doc/configuration.md)
+You can find a list of available wheels on [PyPI](https://pypi.org/project/osrt/).  
+Please feel free to open an issue if you do not see your distribution offered.
 
-## As a Python Library with C++ Extensions
-### Build and Installation
-```
-./autobuild --install-python
-```
-_If you have multiple Python installations, please make sure to build and install using the same Python installation as the one intended for interacting with this library._
+# Compilation
 
-
-### Importing the C++ Extension
-```python
-import gosdt
-
-with open ("data.csv", "r") as data_file:
-    data = data_file.read()
-
-with open ("config.json", "r") as config_file:
-    config = config_file.read()
-
-
-print("Config:", config)
-print("Data:", data)
-
-gosdt.configure(config)
-result = gosdt.fit(data)
-
-print("Result: ", result)
-print("Time (seconds): ", gosdt.time())
-print("Iterations: ", gosdt.iterations())
-print("Graph Size: ", gosdt.size())
-```
-
-### Importing Extension with local Python Wrapper
-```python
-import pandas as pd
-import numpy as np
-from model.gosdt import GOSDT
-
-dataframe = pd.DataFrame(pd.read_csv("experiments/datasets/airfoil/airfoil.csv"))
-
-X = dataframe[dataframe.columns[:-1]]
-y = dataframe[dataframe.columns[-1:]]
-
-hyperparameters = {
-    "regularization": 0.1,
-    "time_limit": 3600,
-    "verbose": True,
-}
-
-model = GOSDT(hyperparameters)
-model.fit(X, y)
-print("Execution Time: {}".format(model.time))
-
-prediction = model.predict(X)
-training_accuracy = model.score(X, y)
-print("Training Accuracy: {}".format(training_accuracy))
-print(model.tree)
-```
+Please refer to the [manual](doc/build.md) to build the C++ command line interface and the Python extension module and run the experiment with example datasets on your machine.
 
 ---
+
 # Configuration
 
-Details on the configuration options.
-
-```bash
-gosdt dataset.csv config.json
-# or
-cat dataset.csv | gosdt config.json
-```
-
-Here the file `config.json` is optional.
-There is a default configuration which will be used if no such file is specified.
-
-## Configuration Description
-
-The configuration file is a JSON object and has the following structure and default values:
+The configuration is a JSON object and has the following structure and default values:
 ```json
-{
-  "k_cluster": true,
-
-  "diagnostics": false,
-  "verbose": true,
-
+{ 
   "regularization": 0.05,
-  "depth_budget": 5,
+  "depth_budget": 0,
+  "k_cluster": false,
+  "metric": "L2",
+  "weights": [],
+  "time_limit": 0,
   "uncertainty_tolerance": 0.0,
   "upperbound": 0.0,
-
-  "model_limit": 10000,
-  "precision_limit": 0,
-  "stack_limit": 0,
-  "tile_limit": 0,
-  "time_limit": 0,
   "worker_limit": 1,
-
+  "stack_limit": 0,
+  "precision_limit": 0,
+  "model_limit": 1,
+  "verbose": false,
+  "diagnostics": false,
+  "balance": false,
+  "look_ahead": true,
+  "similar_support": false,
+  "cancellation": true,
+  "continuous_feature_exchange": false,
+  "feature_exchange": false,
+  "feature_transform": true,
+  "rule_list": false,
+  "non_binary": false,
   "model": "",
-  "profile": "",
   "timing": "",
   "trace": "",
   "tree": "",
-  "datatset_encoding": "",
-
-  "metric": "L2",
-  "weights": []
+  "profile": ""
 }
 ```
 
-### Flags
+## Key parameters
+
+**regularization**
+- Values: Decimal within range [0,1]
+- Description: Used to penalize complexity. A complexity penalty is added to the risk in the following way.
+  ```
+  ComplexityPenalty = # Leaves x regularization
+  ```
+- Default: 0.05
+- **Note: We highly recommend setting the regularization to a value larger than 1/num_samples. A small regularization could lead to a longer training time and possible overfitting.**
+
+**depth_budget**
+- Values: Integers >= 1
+- Description: Used to set the maximum tree depth for solutions, counting a tree with just the root node as depth 1. 0 means unlimited.
+- Default: 0
+
+**time_limit**
+- Values: Decimal greater than or equal to 0
+- Description: A time limit upon which the algorithm will terminate. If the time limit is reached, the algorithm will terminate with an error.
+- Special Cases: When set to 0, no time limit is imposed.
+- Default: 0
 
 **k_cluster**
- - Values: true or false
- - Description: Enables usage of the k-Means Equivalent Points Bound
+- Values: true or false
+- Description: Enables the kmeans lower bound
+- Default: true
+
+**metric**
+- Values: L1 or L2
+- Description: The metric used in loss function. Mean squared error if L2, mean absolute error if L1.
+- Default: L2
+
+**weights**
+- Values: Vector of real numbers
+- Description: Weights assigned to each sample in training dataset. Empty vector means samples are unweighted. 
+- Default: []
+## More parameters
+### Flag
+
+**balance**
+- Values: true or false
+- Description: Enables overriding the sample importance by equalizing the importance of each present class
+- Default: false
+
+**cancellation**
+- Values: true or false
+- Description: Enables propagate up the dependency graph of task cancellations
+- Default: true
+
+**look_ahead**
+- Values: true or false
+- Description: Enables the one-step look-ahead bound implemented via scopes
+- Default: true
+
+**similar_support**
+- Values: true or false
+- Description: Enables the similar support bound implemented via the distance index
+- Default: true
+
+**feature_exchange**
+- Values: true or false
+- Description: Enables pruning of pairs of features using subset comparison
+- Default: false
+
+**continuous_feature_exchange**
+- Values: true or false
+- Description: Enables pruning of pairs continuous of feature thresholds using subset comparison
+- Default: false
+
+**feature_transform**
+- Values: true or false
+- Description: Enables the equivalence discovery through simple feature transformations
+- Default: true
+
+**rule_list**
+- Values: true or false
+- Description: Enables rule-list constraints on models
+- Default: false
+
+**non_binary**
+- Values: true or false
+- Description: Enables non-binary encoding
+- Default: false
 
 **diagnostics**
- - Values: true or false
- - Description: Enables printing of diagnostic trace when an error is encountered to standard output
+- Values: true or false
+- Description: Enables printing of diagnostic trace when an error is encountered to standard output
+- Default: false
 
 **verbose**
- - Values: true or false
- - Description: Enables printing of configuration, progress, and results to standard output
+- Values: true or false
+- Description: Enables printing of configuration, progress, and results to standard output
+- Default: false
 
- ### Tuners
 
- **regularization**
- - Values: Decimal within range [0,1]
- - Description: Used to penalize complexity. A complexity penalty is added to the risk in the following way.
-   ```
-   ComplexityPenalty = # Leaves x regularization
-   ```
-   
- **depth_budget**
- - Values: Integer 
- - Description: The maximum tree depth for solutions, counting a tree with just the root node as depth 1. 0 means unlimited.
 
- **uncertainty_tolerance**
- - Values: Decimal within range [0,1]
- - Description: Used to allow early termination of the algorithm. Any models produced as a result are guaranteed to score within the lowerbound and upperbound at the time of termination. However, the algorithm does not guarantee that the optimal model is within the produced model unless the uncertainty value has reached 0.
 
- **upperbound**
- - Values: Decimal within range [0,1]
- - Description: Used to limit the risk of model search space. This can be used to ensure that no models are produced if even the optimal model exceeds a desired maximum risk. This also accelerates learning if the upperbound is taken from the risk of a nearly optimal model.
+### Tuners
+
+**uncertainty_tolerance**
+- Values: Decimal within range [0,1]
+- Description: Used to allow early termination of the algorithm. Any models produced as a result are guaranteed to score within the lowerbound and upperbound at the time of termination. However, the algorithm does not guarantee that the optimal model is within the produced model unless the uncertainty value has reached 0.
+- Default: 0.0
+
+**upperbound**
+- Values: Decimal within range [0,1]
+- Description: Used to limit the risk of model search space. This can be used to ensure that no models are produced if even the optimal model exceeds a desired maximum risk. This also accelerates learning if the upperbound is taken from the risk of a nearly optimal model.
+- Special Cases: When set to 0, the bound is not activated.
+- Default: 0.0
 
 ### Limits
 
 **model_limit**
- - Values: Decimal greater than or equal to 0
- - Description: The maximum number of models that will be extracted into the output.
- - Special Cases: When set to 0, no output is produced.
+- Values: Decimal greater than or equal to 0
+- Description: The maximum number of models that will be extracted into the output.
+- Special Cases: When set to 0, no output is produced.
+- Default: 1
 
 **precision_limit**
- - Values: Decimal greater than or equal to 0
- - Description: The maximum number of significant figures considered when converting ordinal features into binary features.
- - Special Cases: When set to 0, no limit is imposed.
+- Values: Decimal greater than or equal to 0
+- Description: The maximum number of significant figures considered when converting ordinal features into binary features.
+- Special Cases: When set to 0, no limit is imposed.
+- Default: 0
 
 **stack_limit**
- - Values: Decimal greater than or equal to 0
- - Description: The maximum number of bytes considered for use when allocating local buffers for worker threads.
- - Special Cases: When set to 0, all local buffers will be allocated from the heap.
+- Values: Decimal greater than or equal to 0
+- Description: The maximum number of bytes considered for use when allocating local buffers for worker threads.
+- Special Cases: When set to 0, all local buffers will be allocated from the heap.
+- Default: 0
 
-**tile_limit**
- - Values: Decimal greater than or equal to 0
- - Description: The maximum number of bits used for the finding tile-equivalence
- - Special Cases: When set to 0, no tiling is performed.
-
-**time_limit**
- - Values: Decimal greater than or equal to 0
- - Description: A time limit upon which the algorithm will terminate. If the time limit is reached, the algorithm will terminate with an error.
- - Special Cases: When set to 0, no time limit is imposed.
 
 **worker_limit**
- - Values: Decimal greater than or equal to 1
- - Description: The maximum number of threads allocated to executing th algorithm.
- - Special Cases: When set to 0, a single thread is created for each core detected on the machine.
+- Values: Decimal greater than or equal to 1
+- Description: The maximum number of threads allocated to executing th algorithm.
+- Special Cases: When set to 0, a single thread is created for each core detected on the machine.
+- Default: 1
 
 ### Files
 
 **model**
- - Values: string representing a path to a file.
- - Description: The output models will be written to this file.
- - Special Case: When set to empty string, no model will be stored.
+- Values: string representing a path to a file.
+- Description: The output models will be written to this file.
+- Special Case: When set to empty string, no model will be stored.
+- Default: Empty string
 
 **profile**
- - Values: string representing a path to a file.
- - Description: Various analytics will be logged to this file.
- - Special Case: When set to empty string, no analytics will be stored.
+- Values: string representing a path to a file.
+- Description: Various analytics will be logged to this file.
+- Special Case: When set to empty string, no analytics will be stored.
+- Default: Empty string
 
 **timing**
- - Values: string representing a path to a file.
- - Description: The training time will be appended to this file.
- - Special Case: When set to empty string, no training time will be stored.
+- Values: string representing a path to a file.
+- Description: The training time will be appended to this file.
+- Special Case: When set to empty string, no training time will be stored.
+- Default: Empty string
 
 **trace**
- - Values: string representing a path to a directory.
- - Description: snapshots used for trace visualization will be stored in this directory
- - Special Case: When set to empty string, no snapshots are stored.
+- Values: string representing a path to a directory.
+- Description: snapshots used for trace visualization will be stored in this directory
+- Special Case: When set to empty string, no snapshots are stored.
+- Default: Empty string
 
 **tree**
- - Values: string representing a path to a directory.
- - Description: snapshots used for trace-tree visualization will be stored in this directory
- - Special Case: When set to empty string, no snapshots are stored.
-
-## Optimizing Different Loss Functions
-
-OSRT currently supports weighted L1 and L2 losses.
-
-**metric**
- - Values: string of `L1` or `L2`
- - Description: specify the loss that OSRT is using
-
-**weights**
- - Values: array of decimal within [0, 1] of length of the dataset size
- - Description: specify the weight for the given loss
- - Special Case: When set to empty array, all data points are weighted equally.
-
+- Values: string representing a path to a directory.
+- Description: snapshots used for trace-tree visualization will be stored in this directory
+- Special Case: When set to empty string, no snapshots are stored.
+- Default: Empty string
 
 ---
 
-# Development
+# Example
+
+Example code to run GOSDT with threshold guessing, lower bound guessing, and depth limit. The example python file is available in [gosdt/example.py](/gosdt/example.py). A tutorial ipython notebook is available in [gosdt/tutorial.ipynb](/gosdt/tutorial.ipynb).
+
+```
+import pandas as pd
+import numpy as np
+import time
+import pathlib
+from sklearn.ensemble import GradientBoostingRegressor
+from model.threshold_guess import compute_thresholds
+from model.osrt import OSRT
+
+# read the dataset
+# preprocess your data otherwise OSRT will binarize continuous feature using all threshold values.
+df = pd.read_csv("experiments/datasets/airfoil/airfoil.csv")
+X, y = df.iloc[:,:-1].values, df.iloc[:,-1].values
+h = df.columns[:-1]
+X = pd.DataFrame(X, columns=h)
+X_train = X
+y_train = pd.DataFrame(y)
+print("X:", X.shape)
+print("y:",y.shape)
 
 
-Guide for developers who want to use, modify and test the library.
+# guess thresholds (OPTIONAL) uncomment following lines if you want to speed up optimization
+# NOTE: You should also evaluate accuracy on guessed data if you choose to guess thresholds
+# GBRT parameters for threshold guesses
+# n_est = 40
+# max_depth = 1
+# X_train, thresholds, header, threshold_guess_time = compute_thresholds(X, y, n_est, max_depth)
 
-Describes how to install and use the library with details on project structure.
 
-## Repository Structure
- - **notebooks** - interactive notebooks for examples and visualizations
- - **experiments** - configurations, datasets, and models to run experiments
- - **doc** - documentation
- - **python** - code relating to the Python implementation and wrappers around C++ implementation
- - **auto** - automations for checking and installing project dependencies
- - **dist** - compiled binaries for distribution
- - **build** - compiled binary objects and other build artifacts
- - **lib** - headers for external libraries
- - **log** - log files
- - **src** - source files
- - **test** - test files
+# train OSRT model
+config = {
+    "similar_support": False,
+    "feature_exchange": False,
+    "continuous_feature_exchange": False,
+    "regularization": 0.007,
+    "depth_budget": 6,
+    "model_limit": 1,
+    "time_limit": 0,
+    "similar_support": False,
+    "metric": "L2",
+    "weights": [],
+    "verbose": False,
+    "diagnostics": True,
+        }
 
-## Installing Dependencies
-Refer to [**Dependency Installation**](/doc/dependencies.md##Installation)
+model = OSRT(config)
 
-## Build Process
- - **Check Updates to the Dependency Tests or Makefile** 
-   ```
-   ./autobuild --regenerate
-   ```
- - **Check for Missing Dependencies** 
-   ```
-   ./autobuild --configure --enable-tests
-   ```
- - **Build and Run Test Suite**
-   ```
-   ./autobuild --test
-   ```
- - **Build and Install Program**
-   ```
-   ./autobuild --install --enable-tests
-   ```
- - **Run the Program** 
-   ```
-   gosdt dataset.csv config.json
-   ```
- - **Build and Install the Python Extension**
-   ```
-   ./autobuild --install-python
-   ```
- For a full list of build options, run `./autobuild --help`
+model.fit(X_train, y_train)
 
----
+print("evaluate the model, extracting tree and scores", flush=True)
 
-# Dependencies
+# get the results
+train_acc = model.score(X_train, y_train)
+n_leaves = model.leaves()
+n_nodes = model.nodes()
+time = model.time
 
-List of external dependencies
+print("Model training time: {}".format(time))
+print("Training score: {}".format(train_acc))
+print("# of leaves: {}".format(n_leaves))
+print(model.tree)
+```
 
-The following dependencies need to be installed to build the program. 
- - [**Boost**](https://www.boost.org/) - Collection of portable C++ source libraries
- - [**GMP**](http://gmplib.org/) - Collection of functions for high-precision artihmetics
- - [**Intel TBB**](https://www.threadingbuildingblocks.org/) - Rich and complete approach to parallelism in C++
- - [**WiredTiger**](https://source.wiredtiger.com/2.5.2/index.html) - WiredTiger is an high performance, scalable, production quality, NoSQL, Open Source extensible platform for data management
- - [**OpenCL**](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=14&cad=rja&uact=8&ved=2ahUKEwizj4n2k8LlAhVcCTQIHZlADscQFjANegQIAhAB&url=https%3A%2F%2Fwww.khronos.org%2Fregistry%2FOpenCL%2F&usg=AOvVaw3JjOwbrewRqPxpTXRZ6vN9)(Optional) - A framework for execution across heterogeneous hardware accelerators.
+**Output**
 
-### Bundled Dependencies
-The following dependencies are included as part of the repository, thus requiring no additional installation.
- - [**nlohmann/json**](https://github.com/nlohmann/json) - JSON Parser
- - [**ben-strasser/fast-cpp-csv-parser**](https://github.com/ben-strasser/fast-cpp-csv-parser) - CSV Parser
- - [**OpenCL C++ Bindings 1.2**](https://www.khronos.org/registry/OpenCL/specs/opencl-cplusplus-1.2.pdf) - OpenCL bindings for GPU computing
+```
+X: (1503, 17)
+y: (1503,)
+osrt reported successful execution
+training completed. 3.341 seconds.
+bounds: [0.744063..0.744063] (0.000000) normalized loss=0.632063, iterations=45664
+evaluate the model, extracting tree and scores
+Model training time: 3.3410000801086426
+Training score: 30.06080184358605
+# of leaves: 16
+if feature_1_1 = 1 and feature_2_2 = 1 then:
+    predicted class: 112.945833
+    normalized loss penalty: 0.01
+    complexity penalty: 0.007
 
- ### Installation
- Install these using your system package manager.
- There are also installation scripts provided for your convenience: **trainer/auto**
- 
- These currently support interface with **brew** and **apt**
-  - **Boost** - `auto/boost.sh --install`
-  - **GMP** - `auto/gmp.sh --install`
-  - **Intel TBB** - `auto/tbb.sh --install`
-  - **WiredTiger** - `auto/wiredtiger.sh --install`
-  - **OpenCL** - `auto/opencl.sh --install`
+else if feature_1_1 != 1 and feature_2_2 = 1 and feature_5_3 = 1 then:
+    predicted class: 116.111778
+    normalized loss penalty: 0.028
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_2_2 = 1 and feature_4_71.3 = 1 and feature_5_3 != 1 then:
+    predicted class: 128.063236
+    normalized loss penalty: 0.034
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_2_2 = 1 and feature_3_0.1016 = 1 and feature_4_71.3 != 1 and feature_5_3 != 1 then:
+    predicted class: 120.686444
+    normalized loss penalty: 0.037
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_2_2 = 1 and feature_3_0.1016 != 1 and feature_4_71.3 != 1 and feature_5_3 != 1 then:
+    predicted class: 125.05011
+    normalized loss penalty: 0.021
+    complexity penalty: 0.007
+
+else if feature_1_2 = 1 and feature_2_2 != 1 and feature_3_0.3048 = 1 then:
+    predicted class: 109.279
+    normalized loss penalty: 0.0
+    complexity penalty: 0.007
+
+else if feature_1_1 = 1 and feature_1_2 != 1 and feature_2_2 != 1 and feature_3_0.3048 = 1 then:
+    predicted class: 113.869267
+    normalized loss penalty: 0.003
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_1_2 != 1 and feature_1_3 = 1 and feature_2_2 != 1 and feature_3_0.3048 = 1 then:
+    predicted class: 107.6515
+    normalized loss penalty: 0.0
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_1_2 != 1 and feature_1_3 != 1 and feature_2_2 != 1 and feature_3_0.3048 = 1 then:
+    predicted class: 124.20096
+    normalized loss penalty: 0.038
+    complexity penalty: 0.007
+
+else if feature_1_1 = 1 and feature_2_2 != 1 and feature_3_0.2286 = 1 and feature_3_0.3048 != 1 then:
+    predicted class: 115.355214
+    normalized loss penalty: 0.004
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_1_3 = 1 and feature_2_2 != 1 and feature_3_0.2286 = 1 and feature_3_0.3048 != 1 then:
+    predicted class: 112.966
+    normalized loss penalty: 0.0
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_1_3 != 1 and feature_2_2 != 1 and feature_3_0.2286 = 1 and feature_3_0.3048 != 1 then:
+    predicted class: 125.296885
+    normalized loss penalty: 0.097
+    complexity penalty: 0.007
+
+else if feature_1_1 = 1 and feature_2_2 != 1 and feature_3_0.1524 = 1 and feature_3_0.2286 != 1 and feature_3_0.3048 != 1 then:
+    predicted class: 116.648313
+    normalized loss penalty: 0.009
+    complexity penalty: 0.007
+
+else if feature_1_1 != 1 and feature_2_2 != 1 and feature_3_0.1524 = 1 and feature_3_0.2286 != 1 and feature_3_0.3048 != 1 then:
+    predicted class: 125.097889
+    normalized loss penalty: 0.112
+    complexity penalty: 0.007
+
+else if feature_2_2 != 1 and feature_2_3 = 1 and feature_3_0.1524 != 1 and feature_3_0.2286 != 1 and feature_3_0.3048 != 1 then:
+    predicted class: 122.649413
+    normalized loss penalty: 0.067
+    complexity penalty: 0.007
+
+else if feature_2_2 != 1 and feature_2_3 != 1 and feature_3_0.1524 != 1 and feature_3_0.2286 != 1 and feature_3_0.3048 != 1 then:
+    predicted class: 128.906417
+    normalized loss penalty: 0.173
+    complexity penalty: 0.007
+```
+
+
+# Structure
+
+This repository contains the following directories and files:
+- **.github**: Configurations for GitHub action runners.
+- **doc**: Documentation
+- **experiments**: Datasets and their configurations to run experiments
+- **osrt**: Python implementation and wrappers around C++ implementation
+- **include**: Required 3rd-party header-only libraries
+- **log**: Log files
+- **src**: Source files for C++ implementation and Python binding
+- **test**: Source files for unit tests
+- **build.py**: Python script that builds the project automatically
+- **CMakeLists.txt**: Configuration file for the CMake build system
+- **pyproject.toml**: Configuration file for the SciKit build system
+- **setup.py**: Python script that builds the wheel file
 
 ---
 
 # FAQs
-_Note we will work on this and following sections later_
 
-If you run into any issues, consult the [**FAQs**](/doc/faqs.md) first. 
+If you run into any issues when running GOSDT, consult the [**FAQs**](/doc/faqs.md) first.
 
 ---
 
 # License
 
-Licensing information
+This software is licensed under a 3-clause BSD license (see the LICENSE file for details).
 
 ---
-
-**Inquiries**
-
-For general inquiries, send an email to `r.zhang@duke.edu`
