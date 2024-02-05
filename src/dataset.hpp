@@ -108,15 +108,15 @@ private:
     // N := Number of datapoints in the original dataset
     // E := Number of equivalent points (clusters) in the original dataset 
     std::vector< Bitmask > features; // Binary representation of columns
-    std::vector< double > targets; // Float vector of size N
-    std::vector< double > clustered_targets; // Float vector of size E
-    std::vector< double > cluster_loss; // Float vector of size E
+    std::vector< float > targets; // Float vector of size N
+    std::vector< float > clustered_targets; // Float vector of size E
+    std::vector< float > cluster_loss; // Float vector of size E
     std::vector< int > clustered_targets_mapping; // Size N to index in E (value ranging from 0 - (E-1))
     std::vector< Bitmask > rows; // Binary representation of rows
     std::vector< Bitmask > feature_rows; // Binary representation of rows
     // Bitmask majority; // Binary representation of columns
-    std::vector<double> weights; // Float vector of size N, weights of sample
-    double loss_normalizer;
+    std::vector<float> weights; // Float vector of size N, weights of sample
+    float loss_normalizer;
     // Index index; // Index for calculating summaries
     // Index distance_index; // Index for calculating feature distances
 
@@ -130,17 +130,17 @@ private:
     
     void normalize_data(void);
     
-    double compute_kmeans_lower_bound(Bitmask capture_set) const;
-    double compute_equivalent_points_lower_bound(Bitmask capture_set) const;
+    float compute_kmeans_lower_bound(Bitmask capture_set) const;
+    float compute_equivalent_points_lower_bound(Bitmask capture_set) const;
 
-    double ssq_loss(Bitmask capture_set) const;
-    double ssq_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
+    float ssq_loss(Bitmask capture_set) const;
+    float ssq_loss(std::vector< int > capture_set_idx, float & sum_weights) const;
 
-    double sabs_loss(Bitmask capture_set) const;
-    double sabs_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
+    float sabs_loss(Bitmask capture_set) const;
+    float sabs_loss(std::vector< int > capture_set_idx, float & sum_weights) const;
 
-    double compute_loss(Bitmask capture_set) const;
-    double compute_loss(std::vector< int > capture_set_idx, double & sum_weights) const;
+    float compute_loss(Bitmask capture_set) const;
+    float compute_loss(std::vector< int > capture_set_idx, float & sum_weights) const;
 };
 
 #endif

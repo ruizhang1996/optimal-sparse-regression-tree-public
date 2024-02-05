@@ -10,7 +10,7 @@ Encoder::Encoder(std::istream & input) {
     build(); // Build a set of encoding rules for each feature
 
     if(Configuration::weights.size()){this->weights = Configuration::weights;}
-    else{this -> weights.resize(samples(), 1);}
+    else{this -> weights.resize(samples(), 1.0);}
     // reindex has been disabled since it interferes with the binary search of the new ordinal feature bound
     // reindex(tokens); // Determine an efficient ordering of encoding rules
 
@@ -131,7 +131,7 @@ void Encoder::parse(std::vector< std::vector< std::string > > const & rows) {
 
     std::map< std::string, unsigned int > target_distribution;
 
-    std::vector< double > numerical_targets;
+    std::vector< float > numerical_targets;
     
 
     // Content-based type inference
@@ -494,7 +494,7 @@ void Encoder::target_type(std::string & value) const {
 
 std::vector< Bitmask > const & Encoder::read_binary_rows(void) const { return this -> binary_rows; }
 
-std::vector< double > const & Encoder::read_numerical_targets(void) const { return this -> numerical_targets; }
+std::vector< float > const & Encoder::read_numerical_targets(void) const { return this -> numerical_targets; }
 
 unsigned int Encoder::samples(void) const { return this -> number_of_rows; }
 
@@ -510,4 +510,4 @@ unsigned int Encoder::binary_targets(void) const {
     return this -> number_of_binary_targets;
 }
 
-std::vector<double> Encoder::get_weights() {return this -> weights;}
+std::vector<float> Encoder::get_weights() {return this -> weights;}

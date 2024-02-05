@@ -37,7 +37,7 @@ std::string Configuration::tree = "";
 std::string Configuration::profile = "";
 
 char Configuration::metric = Configuration::l2_loss;
-std::vector<double> Configuration::weights;
+std::vector<float> Configuration::weights;
 
 void Configuration::configure(std::istream & source) {
     json config;
@@ -93,7 +93,7 @@ void Configuration::configure(json config) {
             std::cout << "Unrecognized metric" << std::endl;
         }
     }
-    if (config.contains("weights")) {Configuration::weights = config["weights"].get<std::vector<double>>();}
+    if (config.contains("weights")) {Configuration::weights = config["weights"].get<std::vector<float>>();}
 }
 
 std::string Configuration::to_string(unsigned int spacing) {

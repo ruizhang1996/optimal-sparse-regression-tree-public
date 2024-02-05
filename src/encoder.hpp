@@ -57,7 +57,7 @@ public:
     // @return matrix of bit elements of the binary csv
     std::vector< Bitmask > const & read_binary_rows(void) const;
     // @return vector of numerical values of targets
-    std::vector< double > const & read_numerical_targets(void) const;
+    std::vector< float > const & read_numerical_targets(void) const;
     // @return the number of features read as input
     unsigned int features(void) const;
     // @return the number of targets read as input
@@ -118,7 +118,7 @@ public:
     std::vector< std::pair< unsigned int, unsigned int > > boundaries;
 
     //@return the weights of sample
-    std::vector<double> get_weights(void);
+    std::vector<float> get_weights(void);
 
 private:
     // Original data
@@ -131,7 +131,7 @@ private:
     unsigned int number_of_binary_targets = 0;
 
     // The importance given to each sample
-    std::vector< double > weights;
+    std::vector< float > weights;
 
     // Summaries used to describe each column
     std::vector< std::set< std::string > > values;
@@ -146,7 +146,7 @@ private:
     std::vector< Bitmask > binary_rows;
     
     // Numerical target values 
-    std::vector< double > numerical_targets;
+    std::vector< float > numerical_targets;
 
     // @param number: input number to reduce precision
     // @return an input equivalent to number rounded to k significant figures

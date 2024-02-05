@@ -54,7 +54,7 @@ public:
     static std::string profile; // Path to file used to log runtime statistics
 
     static char metric;
-    static std::vector<double> weights;
+    static std::vector<float> weights;
 };
 
 #endif
