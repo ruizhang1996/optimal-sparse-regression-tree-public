@@ -17,8 +17,8 @@ Implementation of [Optimal Sparse Regression Tree (OSRT)](https://arxiv.org/abs/
 
 # Installation
 
-You may use the following commands to install GOSDT along with its dependencies on macOS, Ubuntu and Windows.  
-You need **Python 3.7 or later** to use the module `gosdt` in your project.
+You may use the following commands to install OSRT along with its dependencies on macOS, Ubuntu and Windows.  
+You need **Python 3.7 or later** to use the module `osrt` in your project.
 
 ```bash
 pip3 install attrs packaging editables pandas sklearn sortedcontainers gmpy2 matplotlib
