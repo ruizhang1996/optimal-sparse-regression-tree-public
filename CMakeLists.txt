@@ -77,9 +77,9 @@ find_package(Threads REQUIRED)
 target_link_libraries(${TARGET_CLI} PRIVATE Threads::Threads)
 target_link_libraries(${TARGET_TESTS} PRIVATE Threads::Threads)
 
-# Target: TREEFARMS Python Module
+# Target: OSRT Python Module
 if (SKBUILD)
-    message(STATUS "TREEFARMS is built using scikit-build. Will build the Python module.")
+    message(STATUS "OSRT is built using scikit-build. Will build the Python module.")
     # Find the Python 3 development environment
     if (NOT DEFINED Python3_INCLUDE_DIR)
         message(FATAL_ERROR "The CMake variable Python3_INCLUDE_DIR should have been defined by scikit-build.")
