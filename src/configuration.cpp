@@ -20,10 +20,10 @@ std::string Configuration::path_to_labels = "";
 
 bool Configuration::balance = false;
 bool Configuration::look_ahead = true;
-bool Configuration::similar_support = true;
+bool Configuration::similar_support = false;
 bool Configuration::cancellation = true;
-bool Configuration::continuous_feature_exchange = true;
-bool Configuration::feature_exchange = true;
+bool Configuration::continuous_feature_exchange = false;
+bool Configuration::feature_exchange = false;
 bool Configuration::feature_transform = true;
 bool Configuration::rule_list = false;
 bool Configuration::non_binary = false;
