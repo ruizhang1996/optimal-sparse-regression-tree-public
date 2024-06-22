@@ -1,0 +1,213 @@
+name: OSRT Linux CI
+
+on:
+  push:
+    branches:
+      - main
+      - publish
+
+  pull_request:
+    branches:
+      - main
+      - publish
+
+
+jobs:
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+          fail-fast: false
+          matrix:
+            os: [ubuntu-22.04, ubuntu-24.04]
+            python-minor-version: [9, 10, 11, 12]
+
+        steps:
+          # Checkout the repo
+          - name: Checkout the repo
+            uses: actions/checkout@v3
+          # Install Python 3.9+
+          - name: Install required development tools - Python 3.${{ matrix.python-minor-version }}
+            uses: actions/setup-python@v4
+            with:
+                python-version: '3.${{ matrix.python-minor-version }}'
+          - name: Verify the Python version
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+          # Install required development tools: Ninja
+          - name: Install required development tools - Ninja (Ubuntu)
+            if: startsWith(matrix.os, 'ubuntu')
+            run: |
+                sudo apt install -y ninja-build
+          # Install required development tools: pkg-config
+          - name: Install required development tools - pkg-config (Ubuntu)
+            if: startsWith(matrix.os, 'ubuntu')
+            run: |
+                sudo apt install -y pkg-config
+          # Install required development tools: scikit-build
+          - name: Install required development tools - scikit-build
+            run: |
+                pip3 install --upgrade scikit-build
+          # Install required development tools: Wheel Fixer
+          - name: Install required development tools - Wheel Fixer (Ubuntu)
+            if: startsWith(matrix.os, 'ubuntu')
+            run: |
+                pip3 install --upgrade auditwheel
+                sudo apt install -y patchelf
+          # Install required 3rd-party libraries
+          - name: Install required 3rd-party libraries (Ubuntu)
+            if: startsWith(matrix.os, 'ubuntu')
+            run: |
+                sudo apt install -y libtbb-dev
+                sudo apt install -y libgmp-dev
+          # Build the project
+          - name: Build the project (Ubuntu)
+            run: |
+                python3 build.py
+          # Run the sample experiment
+          - name: Install the OSRT Python module and run the sample experiment (Python 3.9 - 3.11)
+            if: matrix.python-minor-version != 12
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+                pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2 matplotlib
+                python3 -c "import os; import subprocess; exit(subprocess.run(['pip3', 'install', 'dist/{}'.format(os.listdir('dist')[0])]).returncode)"
+                python3 osrt/example.py
+          - name: Install the OSRT Python module and run the sample experiment (Python 3.12)
+            if: matrix.python-minor-version == 12
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+                pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2==2.2.0a1 matplotlib
+                python3 -c "import os; import subprocess; exit(subprocess.run(['pip3', 'install', 'dist/{}'.format(os.listdir('dist')[0])]).returncode)"
+                python3 osrt/example.py
+
+    publish-manylinux:      
+        runs-on: ubuntu-22.04
+        needs: build
+        if: github.ref_name == 'publish'
+        strategy:
+          fail-fast: false
+          matrix:
+            python-minor-version: [9, 10, 11, 12] 
+
+        steps: 
+          # Checkout the repo
+          - name: Checkout the repo
+            uses: actions/checkout@v3
+          # Install Python 3.9+
+          - name: Install required development tools - Python 3.${{ matrix.python-minor-version }}
+            uses: actions/setup-python@v4
+            with:
+                python-version: '3.${{ matrix.python-minor-version }}'
+          - name: Verify the Python version
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"   
+          # Build wheels with Docker
+          - name: Build the wheel and source file with Docker
+            uses: addnab/docker-run-action@v3
+            with:
+                image: quay.io/pypa/manylinux2014_x86_64
+                options: -v ${{ github.workspace }}:/source
+                run: |
+                    yum install -y zip
+                    yum install -y cmake
+                    yum install -y ninja-build
+                    yum install -y pkgconfig
+                    python3.${{ matrix.python-minor-version }} -m pip install --upgrade scikit-build
+                    python3.${{ matrix.python-minor-version }} -m pip install --upgrade auditwheel
+                    yum install -y patchelf
+                    git clone https://github.com/Microsoft/vcpkg.git
+                    ./vcpkg/bootstrap-vcpkg.sh
+                    export PATH=/vcpkg:$PATH
+                    export VCPKG_INSTALLATION_ROOT=/vcpkg
+                    vcpkg install tbb
+                    vcpkg install gmp
+                    cd /source
+                    python3.${{ matrix.python-minor-version }} build.py
+            
+          # Run the sample experiment
+          - name: Install the OSRT Python module and run the sample experiment (Python 3.9 - 3.11)
+            if: matrix.python-minor-version != 12
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+                pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2 matplotlib
+                python3 -c "import os; import subprocess; exit(subprocess.run(['pip3', 'install', 'dist/{}'.format(os.listdir('dist')[0])]).returncode)"
+                python3 osrt/example.py
+          - name: Install the OSRT Python module and run the sample experiment (Python 3.12)
+            if: matrix.python-minor-version == 12
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+                pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2==2.2.0a1 matplotlib
+                python3 -c "import os; import subprocess; exit(subprocess.run(['pip3', 'install', 'dist/{}'.format(os.listdir('dist')[0])]).returncode)"
+                python3 osrt/example.py
+
+          # Upload wheels
+          - name: Upload the wheel file
+            if: github.ref_name == 'main'
+            uses: actions/upload-artifact@v2
+            with:
+                name: ManyLinuxWheel-3.${{matrix.python-minor-version}}
+                path: dist/*.whl
+
+          - name: Install Twine
+            run: |
+                pip3 install twine
+          
+          # Publish to PyPI
+          - name: Publish wheels to PyPI
+            env:
+              TWINE_USERNAME: __token__  
+              TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }} 
+            run: twine upload --skip-existing dist/*
+            
+    publish-sourcefile:      
+        runs-on: ubuntu-22.04
+        needs: publish-manylinux
+        if: github.ref_name == 'publish'
+        steps: 
+          # Checkout the repo
+          - name: Checkout the repo
+            uses: actions/checkout@v3
+          # Install Python 3.9+
+          - name: Install required development tools - Python 3.9
+            uses: actions/setup-python@v4
+            with:
+                python-version: '3.9'
+          - name: Verify the Python version
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == 9))"   
+        
+          # Install required development tools: Ninja
+          - name: Install required development tools - Ninja (Ubuntu)
+            run: |
+                sudo apt install -y ninja-build
+          # Install required development tools: pkg-config
+          - name: Install required development tools - pkg-config (Ubuntu)
+            run: |
+                sudo apt install -y pkg-config
+          # Install required development tools: scikit-build
+          - name: Install required development tools - scikit-build
+            run: |
+                pip3 install --upgrade scikit-build
+          # Install required development tools: Wheel Fixer
+          - name: Install required development tools - Wheel Fixer (Ubuntu)
+            run: |
+                pip3 install --upgrade auditwheel
+                sudo apt install -y patchelf
+          # Install required 3rd-party libraries
+          - name: Install required 3rd-party libraries (Ubuntu)
+            run: |
+                sudo apt install -y libtbb-dev
+                sudo apt install -y libgmp-dev  
+          # Install Twine      
+          - name: Install Twine
+            run: |
+                pip3 install twine
+          # Pack source file
+          - name: Pack source file
+            run: |
+                python3 setup.py sdist
+          # Publish to PyPI
+          - name: Publish wheels to PyPI
+            env:
+              TWINE_USERNAME: __token__  
+              TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }} 
+            run: twine upload --skip-existing dist/*

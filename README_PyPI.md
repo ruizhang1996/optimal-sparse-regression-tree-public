@@ -26,8 +26,6 @@ pip3 install osrt
 ```
 You need to install `gmpy2==2.0.a1` if You are using Python 3.12
 
-You can find a list of available wheels on [PyPI](https://pypi.org/project/osrt/).  
-Please feel free to open an issue if you do not see your distribution offered.
 
 # Compilation
 
