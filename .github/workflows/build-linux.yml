@@ -3,12 +3,12 @@ name: OSRT Linux CI
 on:
   push:
     branches:
-      - main
+      - master
       - publish
 
   pull_request:
     branches:
-      - main
+      - master
       - publish
 
 
@@ -141,7 +141,6 @@ jobs:
 
           # Upload wheels
           - name: Upload the wheel file
-            if: github.ref_name == 'main'
             uses: actions/upload-artifact@v2
             with:
                 name: ManyLinuxWheel-3.${{matrix.python-minor-version}}

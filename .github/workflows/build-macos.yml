@@ -3,11 +3,11 @@ name: OSRT MacOS CI
 on:
   push:
     branches:
-      - main
+      - master
       - publish
   pull_request:
     branches:
-      - main
+      - master
       - publish
 
 
