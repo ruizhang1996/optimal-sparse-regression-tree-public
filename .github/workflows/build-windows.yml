@@ -1,0 +1,105 @@
+name: OSRT Windows CI
+
+on:
+  push:
+    branches:
+      - master
+      - publish
+  pull_request:
+    branches:
+      - master
+      - publish
+
+jobs:
+    build:
+        runs-on: ${{ matrix.os }}
+        strategy:
+          fail-fast: false
+          matrix:
+            os: [windows-latest]
+            python-minor-version: [9, 10, 11, 12]
+
+        steps:
+          # Checkout the repo
+          - name: Checkout the repo
+            uses: actions/checkout@v3
+          # Install Python 3.9+
+          - name: Install required development tools - Python 3.${{ matrix.python-minor-version }}
+            uses: actions/setup-python@v4
+            with:
+                python-version: '3.${{ matrix.python-minor-version }}'
+          - name: Verify the Python version
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+          
+          # Install required development tools: Ninja
+          - name: Install required development tools - Ninja (Windows)
+            if: startsWith(matrix.os, 'windows')
+            run: |
+                choco install -y ninja 
+
+          # Install required development tools: pkg-config
+          - name: Install required development tools - pkg-config (Windows)
+            if: startsWith(matrix.os, 'windows')
+            run: |
+                choco install -y pkgconfiglite
+          
+          # Install required development tools: scikit-build
+          - name: Install required development tools - scikit-build
+            run: |
+                pip3 install --upgrade scikit-build
+
+
+          # Install required development tools: Wheel Fixer
+          - name: Install required development tools - Wheel Fixer (Windows)
+            if: startsWith(matrix.os, 'windows')
+            run: |
+                pip3 install --upgrade delvewheel
+          
+          # Install required 3rd-party libraries
+          - name: Install required 3rd-party libraries (Windows)
+            if: startsWith(matrix.os, 'windows')
+            run: |
+                vcpkg install tbb:x64-windows
+                vcpkg install gmp:x64-windows
+
+          # Setup MSVC for windows
+          # - name: Setup MSVC for Windows
+          #   if: startsWith(matrix.os, 'windows')
+          #   uses: ilammy/msvc-dev-cmd@v1.4.1
+          
+          # Build the project
+          - name: Build the project (Ubuntu and Macos)
+            if: ${{! startsWith(matrix.os, 'windows')}}
+            run: |
+                python3 build.py
+          
+          # - name: Build the project (Windows)
+          #   if: startsWith(matrix.os, 'windows')
+          #   run: |
+          #       python3 setup.py bdist_wheel --py-limited-api=cp3${{ matrix.python-minor-version }} --build-type=Release -G Ninja -- -- -j8  
+          #       python3 -m delvewheel repair --no-mangle-all --add-path "$ENV:VCPKG_INSTALLATION_ROOT\installed\x64-windows\bin" dist/osrt-0.1.3-cp3${{ matrix.python-minor-version }}-cp3${{ matrix.python-minor-version }}-win_amd64.whl -w dist
+
+          # Run the sample experiment
+          - name: Install the OSRT Python module and run the sample experiment (Python 3.9 - 3.11)
+            if: matrix.python-minor-version != 12
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+                pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2 matplotlib
+                python3 -c "import os; import subprocess; exit(subprocess.run(['pip3', 'install', 'dist/{}'.format(os.listdir('dist')[0])]).returncode)"
+                python3 osrt/example.py
+          - name: Install the OSRT Python module and run the sample experiment (Python 3.12)
+            if: matrix.python-minor-version == 12
+            run: |
+                python3 -c "import sys; exit(not (sys.version_info.major == 3 and sys.version_info.minor == ${{ matrix.python-minor-version }}))"
+                pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2==2.2.0a1 matplotlib
+                python3 -c "import os; import subprocess; exit(subprocess.run(['pip3', 'install', 'dist/{}'.format(os.listdir('dist')[0])]).returncode)"
+                python3 osrt/example.py
+
+          # Upload wheels
+          - name: Upload the wheel file
+            if: github.ref_name == 'publish'
+            uses: actions/upload-artifact@v2
+            with:
+                name: Macos-Wheel-${{matrix.os}}-3.${{matrix.python-minor-version}}
+                path: dist/*.whl
