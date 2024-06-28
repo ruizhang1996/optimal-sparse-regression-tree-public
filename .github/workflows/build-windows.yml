@@ -70,7 +70,7 @@ jobs:
           
           # Build the project
           - name: Build the project (Ubuntu and Macos)
-            if: ${{! startsWith(matrix.os, 'windows')}}
+            if: startsWith(matrix.os, 'windows')
             run: |
                 python3 build.py
           
