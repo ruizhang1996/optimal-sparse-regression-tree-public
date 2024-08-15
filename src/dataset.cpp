@@ -29,6 +29,12 @@ void Dataset::clear(void) {
     this -> targets.clear();
     this -> rows.clear();
     this -> feature_rows.clear();
+    this -> clustered_targets.clear();
+    this -> cluster_loss.clear();
+    this -> clustered_targets_mapping.clear();
+    this -> weights.clear();
+    this -> summary_calls = 0;
+    this -> compute_ibs_calls = 0;
 }
 
 void Dataset::construct_bitmasks(std::istream & data_source) {
