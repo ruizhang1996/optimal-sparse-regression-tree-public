@@ -18,7 +18,7 @@ print("Additional CMake Arguments = {}".format(cmake_args))
 
 setup(
     name="osrt",
-    version="0.1.6",
+    version="0.1.7",
     description="Implementation of Optimal Sparse Regression Trees",
     author="UBC Systopia Research Lab",
     url="https://github.com/ruizhang1996/optimal-sparse-regression-tree-public",

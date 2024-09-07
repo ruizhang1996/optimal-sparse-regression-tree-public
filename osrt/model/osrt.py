@@ -141,7 +141,12 @@ class OSRT:
         """
         if self.tree is None:
             raise Exception("Error: Model not yet trained")
-        return self.tree.score(X, y, weight=weight)
+        if "metric" in self.configuration:
+            metric = self.configuration["metric"]
+        else:
+            metric = "L2"
+        
+        return self.tree.score(X, y, metric=metric, weight=weight)
 
     def __len__(self):
         """
