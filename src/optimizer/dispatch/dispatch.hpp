@@ -24,7 +24,7 @@ bool Optimizer::dispatch(Message const & message, unsigned int id) {
             if (is_root) { // Update the optimizer state
                 // float root_upperbound = this -> cart(vertex -> second.capture_set(), vertex -> second.feature_set(), id);
                 // std::cout << "Cart: " << root_upperbound << std::endl;
-                float root_upperbound = 1.0;
+                float root_upperbound = task.base_objective();
                 if (Configuration::upperbound > 0.0) { root_upperbound = std::min(root_upperbound, Configuration::upperbound); }
                 vertex -> second.update(vertex -> second.lowerbound(), root_upperbound, -1);
                 this -> root = vertex -> second.identifier();
