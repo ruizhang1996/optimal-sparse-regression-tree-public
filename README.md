@@ -21,7 +21,7 @@ You may use the following commands to install OSRT along with its dependencies o
 You need **Python 3.9 or later** to use the module `osrt` in your project.
 
 ```bash
-pip3 install attrs packaging editables pandas sklearn sortedcontainers gmpy2 matplotlib
+pip3 install attrs packaging editables pandas scikit-learn sortedcontainers gmpy2 matplotlib
 pip3 install osrt
 ```
 You need to install `gmpy2==2.0.a1` if You are using Python 3.12
