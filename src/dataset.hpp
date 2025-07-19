@@ -64,7 +64,7 @@ public:
     // @modifies min_obj: The minimal objective incurred if all equivalent classes are optimally labelled without considering complexity penalty
     // @modifies max_loss: The loss incurred if the capture set is left unsplit and the best single label is chosen
     // @modifies target_index: The label to choose if left unsplit
-    void summary(Bitmask const & capture_set, float & info, float & potential, float & min_obj, float & max_loss, unsigned int & target_index, unsigned int id) const;
+    void summary(Bitmask const & capture_set, float & info, float & potential, float & min_obj, float & guaranteed_min_obj, float & max_loss, unsigned int & target_index, unsigned int id) const;
 
     // @param feature_index: the index of the binary feature to use bisect the set
     // @param positive: if true, modifies set to reflect the part of the bisection that responds positive to the binary feature

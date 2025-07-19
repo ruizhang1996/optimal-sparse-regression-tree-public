@@ -85,7 +85,7 @@ ldouble fill_dp_matrix_dynamic_stop(const std::vector<double> & x, // data
     }
 
     // Initialize for q = 0
-    S[0][i] = ssq(0, i, sum_x, sum_x_sq, sum_w);
+    S[0][i] = dissimilarity(criterion, 0, i, sum_x, sum_x_sq, sum_w, sum_w_sq);
     J[0][i] = 0;
   }
 

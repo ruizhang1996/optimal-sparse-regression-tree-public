@@ -3,6 +3,7 @@
 
 float Configuration::uncertainty_tolerance = 0.0;
 float Configuration::regularization = 0.05;
+bool Configuration::allow_small_reg = false;
 float Configuration::upperbound = 0.0;
 
 unsigned int Configuration::time_limit = 0;
@@ -14,6 +15,7 @@ unsigned int Configuration::model_limit = 1;
 bool Configuration::verbose = false;
 bool Configuration::diagnostics = false;
 
+unsigned int Configuration::minimum_captured_points = 7;
 unsigned char Configuration::depth_budget = 0;
 bool Configuration::reference_LB = false;
 std::string Configuration::path_to_labels = "";
@@ -48,6 +50,7 @@ void Configuration::configure(std::istream & source) {
 void Configuration::configure(json config) {
     if (config.contains("uncertainty_tolerance")) { Configuration::uncertainty_tolerance = config["uncertainty_tolerance"]; }
     if (config.contains("regularization")) { Configuration::regularization = config["regularization"]; }
+    if (config.contains("allow_small_reg")) { Configuration::allow_small_reg = config["allow_small_reg"]; }
     if (config.contains("upperbound")) { Configuration::upperbound = config["upperbound"]; }
 
     if (config.contains("time_limit")) { Configuration::time_limit = config["time_limit"]; }
@@ -59,6 +62,7 @@ void Configuration::configure(json config) {
     if (config.contains("verbose")) { Configuration::verbose = config["verbose"]; }
     if (config.contains("diagnostics")) { Configuration::diagnostics = config["diagnostics"]; }
 
+    if (config.contains("minimum_captured_points")) { Configuration::minimum_captured_points = config["minimum_captured_points"]; }
     if (config.contains("depth_budget")) { Configuration::depth_budget = config["depth_budget"]; }
     if (config.contains("reference_LB")) {
         Configuration::reference_LB = config["reference_LB"];
@@ -66,6 +70,19 @@ void Configuration::configure(json config) {
         //the alias "warm_LB" in configuration files is sometimes also used to refer to reference_LB
         if (config.contains("warm_LB")) { Configuration::reference_LB = config["warm_LB"]; }
     }
+
+    if (config.contains("path_to_labels")) { Configuration::path_to_labels = config["path_to_labels"].get<std::string>(); }
+    // If config file specified to use reference model lower bounds, parse the necessary file path:
+    if (Configuration::reference_LB) {
+        if (!std::ifstream(Configuration::path_to_labels).good()) {
+            std::cout << "File Not Found: " << Configuration::path_to_labels << std::endl;
+            throw "Error! reference_LB was true, but path to black box labels provided in the config file was not found.";
+        } else {
+		    std::ifstream reference_labels(Configuration::path_to_labels);
+		    Reference::initialize_labels(reference_labels);
+        }
+    }
+
     if (config.contains("balance")) { Configuration::balance = config["balance"]; }
     if (config.contains("look_ahead")) { Configuration::look_ahead = config["look_ahead"]; }
     if (config.contains("similar_support")) { Configuration::similar_support = config["similar_support"]; }
@@ -100,6 +117,7 @@ std::string Configuration::to_string(unsigned int spacing) {
     json obj = json::object();
     obj["uncertainty_tolerance"] = Configuration::uncertainty_tolerance;
     obj["regularization"] = Configuration::regularization;
+    obj["allow_small_reg"] = Configuration::allow_small_reg;
     obj["upperbound"] = Configuration::upperbound;
 
     obj["time_limit"] = Configuration::time_limit;
@@ -111,7 +129,10 @@ std::string Configuration::to_string(unsigned int spacing) {
     obj["verbose"] = Configuration::verbose;
     obj["diagnostics"] = Configuration::diagnostics;
 
+    obj['minimum_captured_points'] = Configuration::minimum_captured_points;
     obj["depth_budget"] = Configuration::depth_budget;
+    obj["reference_LB"] = Configuration::reference_LB;
+    obj["path_to_labels"] = Configuration::path_to_labels;
 
     obj["balance"] = Configuration::balance;
     obj["look_ahead"] = Configuration::look_ahead;
@@ -129,5 +150,14 @@ std::string Configuration::to_string(unsigned int spacing) {
     obj["trace"] = Configuration::trace;
     obj["tree"] = Configuration::tree;
     obj["profile"] = Configuration::profile;
+
+    obj["k_cluster"] = Configuration::k_cluster;
+    if (Configuration::metric == Configuration::l1_loss){
+        obj["metric"] = "L1";
+    }else {
+        obj["metric"] = "L2";
+    }
+    obj["weights"] = Configuration::weights;
+    
     return obj.dump(spacing);
 }

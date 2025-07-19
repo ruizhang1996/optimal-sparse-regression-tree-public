@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <json/json.hpp>
-#include <vector>
+#include "reference.hpp"
 
 using json = nlohmann::json;
 
@@ -19,6 +19,7 @@ public:
 
     static float uncertainty_tolerance; // The maximum allowed global optimality before the optimization can terminate
     static float regularization; // The penalty incurred for each leaf in the model
+    static bool allow_small_reg; // Flag for allowing regularization < 1/n , where n = num_samples (if false, regularizations below 1/n are automatically set to 1/n)
     static float upperbound; // Upperbound on the root problem for pruning problems using a greedy model
 
     static unsigned int time_limit; // The maximum allowed runtime (seconds). 0 means unlimited.
@@ -30,6 +31,7 @@ public:
     static bool verbose; // Flag for printing status to standard output
     static bool diagnostics; // Flag for printing diagnosis to standard output if a bug is detected
 
+    static unsigned int minimum_captured_points; // The minimum captured points for any leaf
     static unsigned char depth_budget; // The maximum tree depth for solutions, counting a tree with just the root node as depth 1. 0 means unlimited.
     static bool reference_LB; // Flag for using a vector of misclassifications from another (reference) model to lower bound our own misclassifications
     static std::string path_to_labels; //if reference_LB is true, gives file path to the labels from the reference model. Otherwise, not used

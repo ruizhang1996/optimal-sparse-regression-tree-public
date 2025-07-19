@@ -357,6 +357,7 @@ void Dataset::normalize_data() {
             throw IntegrityViolation("Dataset::normalize_data", reason.str());
         }
     }
+    if (Configuration::reference_LB) Reference::normalize_labels(loss_normalizer);
     this -> loss_normalizer = loss_normalizer;
 
 
@@ -467,7 +468,7 @@ void Dataset::subset(unsigned int feature_index, Bitmask & negative, Bitmask & p
 // 3. Check equiv (points lower bound + 2 * reg) before using Kmeans to
 //    determine if we need more split as it has a way lower overhead
 
-void Dataset::summary(Bitmask const & capture_set, float & info, float & potential, float & min_obj, float & max_loss, unsigned int & target_index, unsigned int id) const {
+void Dataset::summary(Bitmask const & capture_set, float & info, float & potential, float & min_obj, float & guaranteed_min_obj, float & max_loss, unsigned int & target_index, unsigned int id) const {
     summary_calls++;
     Bitmask & buffer = State::locals[id].columns[0];
     //unsigned int * distribution; // The frequencies of each class
@@ -501,17 +502,31 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
         compute_kmeans_calls++;
     }
 
-    // float equivalent_point_loss_1 = 2 * Configuration::regularization + compute_equivalent_points_lower_bound(capture_set);
-    // float max_loss_1 = min_cost + Configuration::regularization;
-    // float diff = equivalent_point_loss - equivalent_point_loss_1;
+    guaranteed_min_obj = equivalent_point_loss;
+    if (guaranteed_min_obj > max_loss + Configuration::regularization){
+        guaranteed_min_obj = max_loss + Configuration::regularization;
+    }
 
-    // float gap = max_loss_1 - equivalent_point_loss_1;
-    // if (gap > 0.0001) {
-    //     float percent = diff / gap;
-    //     summary_calls_has_gap++;
-    //     cum_percent += percent;
-        
-    // }
+    if (Configuration::reference_LB){
+        //calculate reference model's error on this capture set, use as estimate for min_loss (possible overestimate)
+        float reference_model_loss = 0.0;
+        int max = capture_set.size();
+        if (Configuration::metric == Configuration::l2_loss){
+            for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+                reference_model_loss += (Reference::numeric_labels[i] - targets[i]) * (Reference::numeric_labels[i] - targets[i]);
+            }
+        } else {
+            for (int i = capture_set.scan(0, true); i < max; i = capture_set.scan(i + 1, true)) {
+                reference_model_loss += abs(Reference::numeric_labels[i] - targets[i]);
+            }
+        }
+        min_obj = reference_model_loss + 2 * Configuration::regularization;
+    } else {
+        // when not using a reference model, we do not want min_loss to be an overestimate
+        // so we set min_loss to match guaranteed_min_loss
+        min_obj = guaranteed_min_obj;
+    }
+
 
     min_obj = equivalent_point_loss;
     potential = max_loss + Configuration::regularization - min_obj;

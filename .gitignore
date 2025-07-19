@@ -23,3 +23,8 @@ gosdt
 gosdt_test
 
 .DS_Store
+
+.vscode
+_skbuild
+dist
+*.egg-info

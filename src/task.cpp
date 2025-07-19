@@ -9,12 +9,12 @@ Task::Task(Bitmask const & capture_set, Bitmask const & feature_set, unsigned in
     this -> _feature_set = feature_set;
     this -> _support = (float)(capture_set.count()) / (float)(State::dataset.height());
     float const regularization = Configuration::regularization;
-    bool terminal = (this -> _capture_set.count() <= 1) || (this -> _feature_set.empty());
+    bool terminal = (this -> _capture_set.count() < 2 * Configuration::minimum_captured_points) || (this -> _feature_set.empty());
 
-    float potential, min_obj, max_loss;
+    float potential, min_obj, guaranteed_min_obj, max_loss;
     unsigned int target_index;
     // Careful, the following method modifies capture_set
-    State::dataset.summary(this -> _capture_set, this -> _information, potential, min_obj, max_loss, target_index, id);
+    State::dataset.summary(this -> _capture_set, this -> _information, potential, min_obj, guaranteed_min_obj, max_loss, target_index, id);
 
     this -> _base_objective = max_loss + regularization;
     // Add lambda because we know this has at least 2 leaves
