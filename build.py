@@ -51,12 +51,21 @@ def repair_wheel(wheel) -> None:
         delocate_wheel(["-w", "dist", "-v", wheel])
     elif system == "Linux":
         distribution = distro.id()
+        
+        print("Auditwheel path in script:")
+        subprocess.run(["which", "auditwheel"])
+
+        print("Auditwheel version in script:")
+        subprocess.run(["auditwheel", "--version"])
         if distribution == "ubuntu":
-            auditwheel(["repair", "-w", "dist", "--plat", "linux_x86_64", wheel])
+            auditwheel(["repair", "-w", "dist", "--plat", "auto", wheel])
         elif distribution == "centos":
             auditwheel(["repair", "-w", "dist", "--plat", "manylinux_2_17_x86_64", wheel])
             # Remove the original wheel
             # The fixed wheel has a difference file name
+            os.remove(wheel)
+        elif distribution == "almalinux":
+            auditwheel(["repair", "-w", "dist", "--plat", "auto", wheel])
             os.remove(wheel)
         else:
             print("Linux distribution {} is not supported by this script.".format(distribution))

@@ -141,7 +141,7 @@ jobs:
 
           # Upload wheels
           - name: Upload the wheel file
-            uses: actions/upload-artifact@v2
+            uses: actions/upload-artifact@v4
             with:
                 name: ManyLinuxWheel-3.${{matrix.python-minor-version}}
                 path: dist/*.whl
