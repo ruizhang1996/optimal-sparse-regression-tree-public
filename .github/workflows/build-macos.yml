@@ -130,7 +130,7 @@ jobs:
         strategy:
           fail-fast: false
           matrix:
-            os: [macos-12, macos-13, macos-14]
+            os: [macos-13, macos-14, macos-15]
             python-minor-version: [9, 10, 11, 12]
 
         steps:
