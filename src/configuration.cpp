@@ -129,7 +129,7 @@ std::string Configuration::to_string(unsigned int spacing) {
     obj["verbose"] = Configuration::verbose;
     obj["diagnostics"] = Configuration::diagnostics;
 
-    obj['minimum_captured_points'] = Configuration::minimum_captured_points;
+    obj["minimum_captured_points"] = Configuration::minimum_captured_points;
     obj["depth_budget"] = Configuration::depth_budget;
     obj["reference_LB"] = Configuration::reference_LB;
     obj["path_to_labels"] = Configuration::path_to_labels;
