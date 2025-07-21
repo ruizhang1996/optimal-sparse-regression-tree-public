@@ -14,7 +14,7 @@ y_train = pd.DataFrame(y)
 print("X:", X.shape)
 print("y:",y.shape)
 
-clf = GradientBoostingRegressor(n_estimators=10, max_depth=3, random_state=42)
+clf = GradientBoostingRegressor(n_estimators=100, max_depth=5, random_state=42)
 clf.fit(X_train, y_train.values.flatten())
 warm_labels = clf.predict(X_train)
 labelsdir = pathlib.Path('/tmp/warm_lb_labels')

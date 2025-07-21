@@ -503,9 +503,6 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     }
 
     guaranteed_min_obj = equivalent_point_loss;
-    if (guaranteed_min_obj > max_loss + Configuration::regularization){
-        guaranteed_min_obj = max_loss + Configuration::regularization;
-    }
 
     if (Configuration::reference_LB){
         //calculate reference model's error on this capture set, use as estimate for min_loss (possible overestimate)
@@ -528,7 +525,7 @@ void Dataset::summary(Bitmask const & capture_set, float & info, float & potenti
     }
 
 
-    min_obj = equivalent_point_loss;
+    // min_obj = equivalent_point_loss;
     potential = max_loss + Configuration::regularization - min_obj;
     info = information;
     target_index = cost_minimizer;
